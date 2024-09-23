@@ -69,8 +69,7 @@ _gp_IntrMain:
 	@; se encarga de actualizar los tics, intercambiar procesos, etc.;
 _gp_rsiVBL:
 	push {r4-r7, lr}
-
-
+	
 	pop {r4-r7, pc}
 
 
@@ -123,8 +122,51 @@ _gp_numProc:
 	@; R0: 0 si no hay problema, >0 si no se puede crear el proceso
 _gp_crearProc:
 	push {lr}
-
-
+		@; mirem quin és el numero de zocalo per si el podem donar o no
+		cmp r1, #0
+		moveq r0, #1	@;farem servir 1 per indicar que l'error és que aquest zocalo es reservat
+		beq .LfinalCP
+		@; per mirar si el zocalo esta ocupat mirarem al vector de _gd_pcbs
+		ldr r4, =_gd_pcbs
+		mov r5, #24		@; 24 => 6 int's del registre * 4 (ocupació d'un int)
+		mla r6, r5, r1, r4	@; multipliquem r5 i r1 per saber el desplaçament per arribar al PID del zocalo que volem veure i el sumem a r4 que es la direccio inicial del vector de pcbs
+		ldr r5, [r6]
+		@; si el PID és 0 significa que esta lliure, sino significa que esta ocupat
+		cmp r5, #0
+		movne r0, #2	@;farem servir 2 per indicar que l'error és perque el zocalo esta ocupat
+		bne .LfinalCP
+		
+		@; obtenir un nou PID pel nou proces i guardar el nou valor
+		ldr r5, =_gd_pidCount
+		ldr r7, [r5]
+		add r7, #1
+		str r7, [r5]
+		str r7, [r6]
+		
+		@; guardem la direccio de la rutina inicial del proces (r0)
+		@; compensem el decrement
+		add r0, #4
+		str r0, [r6, #4]
+		
+		@; guardem els 4 primers caracters del nom (r2)
+		@; 1 caracter son 8 bits, volem els 4 primers llavors -> 4*8 = 32 bits
+		ldr r2, [r2]
+		str r2, [r6, #16]
+		
+		@; calcul de la direccio base de la pila
+		@; els vectors de les piles estan en _gd_stacks[15*128]
+		ldr r7, =_gd_stacks
+		@; cada pila ocupa 128*4 = 512B
+		@; 15 piles (0-14)
+		mov r8, r1
+		sub r8, #1
+		mov r9, #512
+		mla r8, r9, r9	@; desplaçament inici de la pila
+		add r7, r8		@; direccio inici de la pila
+		
+		@; guardem en la pila del proces els registres
+		
+		.LfinalCP
 	pop {pc}
 
 
