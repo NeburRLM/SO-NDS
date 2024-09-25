@@ -22,7 +22,7 @@
 */
 int _gm_initFS()
 {
-	return 0;
+	return nitroFSInit(NULL);	// inicializar sistema de ficheros NITRO
 }
 
 
