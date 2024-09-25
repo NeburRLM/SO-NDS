@@ -83,8 +83,30 @@ _gp_rsiVBL:
 	@; R5: nuevo número de procesos en READY (+1)
 _gp_salvarProc:
 	push {r8-r11, lr}
-
-
+		@; guardem el numero de zocalo a la ultima posicio de la cua de ready
+		ldr r8, [r6]	@; sabem que _gd_pidz => PID + num. zocalo
+		and r8, #0xf	@; num. zocalo
+		ldr r9, =_gd_qReady
+		str r8, [r9, r5]
+		
+		@; guardem el valor de R15 en el pcb del proces a desbancar
+		ldr r9, =_gd_pcbs
+		mov r10, #24
+		mla r11, r10, r8, r9		@; direccio del pcb del proces
+		ldr r10, [r13, #60]			@; en r13 esta el SP i r15 (PC) esta en la posicio més baixa (60)
+		str r10, [r11, #4]
+		
+		@; guardem el CPSR del proces a desbancar
+		mrs r10, SPSR				@; agafem el SPSR perque es on s'ha guardat el CPSR del proces a desbancar
+		str r10, [r11, #12]
+		
+		@; canviem el mode d'execució
+		mov r8, r13
+		mrs r10, CPSR
+		and r10, #0xFFFFFFE0		@; posem a 0 els ultims 5 bits que son els que indiquen el mode d'execució
+		orr r10, #0x1F				@; posem aquest 5 bits a 1 per aplicar el nou mode d'execució
+		msr CPSR, r9
+		
 	pop {r8-r11, pc}
 
 
@@ -104,10 +126,12 @@ _gp_restaurarProc:
 	@;Resultado
 	@; R0: número de procesos total
 _gp_numProc:
-	push {lr}
-
-
-	pop {pc}
+	push {r1, lr}
+		mov r0, #1 @;proces que esta en run
+		ldr r1, =_gd_nReady
+		ldr r1, [r1]
+		add r0, r1
+	pop {r1, pc}
 
 
 	.global _gp_crearProc
@@ -121,7 +145,7 @@ _gp_numProc:
 	@;Resultado
 	@; R0: 0 si no hay problema, >0 si no se puede crear el proceso
 _gp_crearProc:
-	push {lr}
+	push {r4-r10, lr}
 		@; mirem quin és el numero de zocalo per si el podem donar o no
 		cmp r1, #0
 		moveq r0, #1	@;farem servir 1 per indicar que l'error és que aquest zocalo es reservat
@@ -161,13 +185,50 @@ _gp_crearProc:
 		mov r8, r1
 		sub r8, #1
 		mov r9, #512
-		mla r8, r9, r9	@; desplaçament inici de la pila
+		mul r8, r9
+		add r8, r9		@; desplaçament inici de la pila
 		add r7, r8		@; direccio inici de la pila
 		
 		@; guardem en la pila del proces els registres
+		@; primer hem de guardar els arguments que tingui el proces, en aquest cas r3
+		str r3, [r7]
+		@; omplim els registres r0-r12 amb 0
+		mov r8, #0 @; valor pels registres
+		mov r9, #4 @; desplaçament per la pila (en la primera posicio esta l'argument, r0)
+		.LomplirRx:
+			str r8, [r7, r9]
+			add r9, #4
+			cmp r9, #48
+			ble .LomplirRx
+		@; guardem en r14 la direccio de la rutina _gp_terminarProc
+		ldr r8, =_gp_terminarProc
+		str r8, [r7, #56]
 		
-		.LfinalCP
-	pop {pc}
+		@; guardem en el vector de pcbs la direccio incial de la pila que es on estan guardats els registres
+		str r7, [r6, #8]
+		
+		@; guardem el valor incial del CPSR en el camp Status del vector de pcbs
+		mrs r8, CPSR
+		str r8, [r6, #12]
+		
+		@; guardem el numero de zocalo a la cua de Ready
+		ldr r8, =_gd_qReady
+		ldr r9, =_gd_nReady
+		ldr r10, [r9]
+		strb r1, [r8, r10]
+		@;incrementem la variable _gd_nReady
+		add r10, #1
+		str r10, [r9]
+		
+		@; inicialitzem altres variables del pcb (en aquest cas nomes queda workTicks)
+		mov r8, #0
+		str r8, [r6, #20]
+		
+		@; retornem amb codi OK
+		mov r0, #0
+		.LfinalCP:
+		
+	pop {r4-r10, pc}
 
 
 	@; Rutina para terminar un proceso de usuario:
