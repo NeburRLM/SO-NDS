@@ -12,7 +12,7 @@
 #include <string.h>
 
 #include "garlic_system.h"	// definición de funciones y variables de sistema
-#include <elf.h>
+#include <elf.h> 
 
 int _gm_primeraPosMem = INI_MEM;
 
@@ -75,12 +75,12 @@ intFunc _gm_cargarPrograma(char *keyName)
 	//si fitxer no trobat en programas del nitrofiles retornem 0, sinò passem a carregar-ho a memòria
 	if (fitxer != NULL)					
 	{
-		//si fitxer trobat, calculem el tamany (quantitat d'elemnts) per saber el que es necessita per reservar-ho en memòria dinàmica
+		//si fitxer trobat, calculem el tamany (quantitat d'elements) per saber el que es necessita per reservar-ho en memòria dinàmica
 		fseek(fitxer, 0, SEEK_END);											//moure el punter del fitxer al final 
 		tamany = ftell(fitxer);												//obtenir la posició actual del punter (que equivaldrà al tamany del fitxer=num d'elements)
 		fseek(fitxer, 0, SEEK_SET);											//situem el punter al principi del fitxer per fer gestions posteriors
 			
-		//cargar el fitxer íntegrament dins d'un buffer de memòria dinámica per un accés al seu contingut més eficient 
+		//cargar el fitxer íntegrament dins d'un buffer de memòria dinàmica per un accés al seu contingut més eficient 
 		buffer = (char*) malloc(tamany);									//assignem dinàmicament memòria en el heap pel buffer de caràcters en funció del tamany del fitxer 	
 		fread(buffer, sizeof(char), tamany, fitxer); 						//guardem el contingut del fitxer al buffer 								
 		memcpy(&capcaleraElf, buffer, sizeof(Elf32_Ehdr));					//capçalera .elf
@@ -116,8 +116,10 @@ intFunc _gm_cargarPrograma(char *keyName)
 				if (i+1 < phnum)																	
 				{	
 					offset = offset + phentsize;							//actualitzem offset per a que apunti al següent segment del .elf				
-					fseek(fitxer, offset, SEEK_SET);						//actualitza apuntador per moure el apuntador del fitxer a la posició actual de l'offset
-					fread(&taulaSeg, 1, sizeof(Elf32_Phdr), fitxer); 		//actualitzem capçalera pel següent segment
+					//fseek(fitxer, offset, SEEK_SET);						//actualitza apuntador per moure el apuntador del fitxer a la posició actual de l'offset
+					//fread(&taulaSeg, 1, sizeof(Elf32_Phdr), fitxer); 		//actualitzem capçalera pel següent segment
+					// Carga la següent entrada de la taula de segments en taulaSeg directament desde el buffer
+					memcpy(&taulaSeg, buffer + offset, sizeof(Elf32_Phdr)); 
 				}														
 			}
 		}
