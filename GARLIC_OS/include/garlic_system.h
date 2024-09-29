@@ -68,7 +68,7 @@ extern garlicWBUF _gd_wbfs[4];	// vector con los buffers de 4 ventanas
 
 extern int _gd_stacks[15*128];	// vector de pilas de los procesos de usuario
 
-
+extern int _gm_primeraPosMem;	// contindrà la primera posició de memòria lliure
 
 
 //------------------------------------------------------------------------------
