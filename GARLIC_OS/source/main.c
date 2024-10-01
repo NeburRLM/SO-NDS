@@ -75,7 +75,25 @@ int main(int argc, char **argv) {
 	}
 	else
 		printf("*** Programa \"PRNT\" NO cargado\n");
-
+	
+	////////////////////////---PROGRAMA USUARI ORDH---////////////////////////
+	printf("\n\n*** Carga de programa ORDH.elf\n");
+	start = _gm_cargarPrograma("ORDH");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pusle tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(4);		// llamada al proceso ORDH con argumento 0
+	}
+	else
+		printf("*** Programa \"ORDH\" NO cargado\n");	
+	//////////////////////////////////////////////////////////////////////////
+	
 	printf("*** Final fase 1_M\n");
 
 	while (1)
