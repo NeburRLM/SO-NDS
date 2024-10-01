@@ -69,7 +69,38 @@ _gp_IntrMain:
 	@; se encarga de actualizar los tics, intercambiar procesos, etc.;
 _gp_rsiVBL:
 	push {r4-r7, lr}
-	
+		@; incrementem el contador de tics
+		ldr r4, =_gd_tickCount
+		ldr r5, [r4]
+		add r5, #1
+		str r5, [r4]
+		
+		@; mirem si hi ha algun proces a la cua de ready
+		ldr r4, =_gd_nReady
+		ldr r5, [r4]
+		cmp r5, #0
+		beq .Lfi
+		
+		@; mirem si el proces és el del SO
+		ldr r6, =_gd_pidz
+		ldr r7, [r6]
+		tst r7, #0xF
+		beq .Lsalvar
+		
+		@; mirem si el PID es 0
+		tst r7, #0xF0
+		beq .Lrest
+		
+		@; salvar el context
+		.Lsalvar:
+			bl _gp_salvarProc
+			str r5, [r4]
+		@;restaurar el context
+		.Lrest:
+			bl _gp_restaurarProc
+			str r5, [r4]
+		
+		.Lfi:
 	pop {r4-r7, pc}
 
 
@@ -100,13 +131,68 @@ _gp_salvarProc:
 		mrs r10, SPSR				@; agafem el SPSR perque es on s'ha guardat el CPSR del proces a desbancar
 		str r10, [r11, #12]
 		
-		@; canviem el mode d'execució
+		@; canviem el mode d'execució a system
 		mov r8, r13
 		mrs r10, CPSR
 		and r10, #0xFFFFFFE0		@; posem a 0 els ultims 5 bits que son els que indiquen el mode d'execució
 		orr r10, #0x1F				@; posem aquest 5 bits a 1 per aplicar el nou mode d'execució
+		msr CPSR, r10
+		
+		@; apilem el valor dels registres
+		@; agafem els valors de la pila del mode irq (r8 -> SP)
+		@; els guardem agafan la direccio que hi ha a r13 (SP)
+		ldr r10, [r8, #40]
+		str r10, [r13]
+		
+		ldr r10, [r8, #44]
+		str r10, [r13, #4]
+		
+		ldr r10, [r8, #48]
+		str r10, [r13, #8]
+		
+		ldr r10, [r8, #52]
+		str r10, [r13, #12]
+		
+		ldr r10, [r8, #20]
+		str r10, [r13, #16]
+		
+		ldr r10, [r8, #24]
+		str r10, [r13, #20]
+		
+		ldr r10, [r8, #28]
+		str r10, [r13, #24]
+		
+		ldr r10, [r8, #32]
+		str r10, [r13, #28]
+		
+		ldr r10, [r8]
+		str r10, [r13, #32]
+		
+		ldr r10, [r8, #4]
+		str r10, [r13, #36]
+		
+		ldr r10, [r8, #8]
+		str r10, [r13, #40]
+		
+		ldr r10, [r8, #12]
+		str r10, [r13, #44]
+		
+		ldr r10, [r8, #56]
+		str r10, [r13, #48]
+		
+		str r14, [r13, #52]
+		
+		@; guardem el valor del registre r13 en el camp SP del PCB
+		str r13, [r11, #8]
+		
+		@; tornem al mode IRQ
+		mrs r9, CPSR
+		and r9, #0xFFFFFFE0
+		orr r9, #0x12
 		msr CPSR, r9
 		
+		@; retornem la rutina
+		add r5, #1
 	pop {r8-r11, pc}
 
 
@@ -117,8 +203,98 @@ _gp_salvarProc:
 	@; R6: dirección _gd_pidz
 _gp_restaurarProc:
 	push {r8-r11, lr}
-
-
+		@; recuperem el numero de zocalo
+		ldr r8, =_gd_qReady
+		ldrb r9, [r8]
+		@; com treiem el proces de la cua de ready hem de moure tots els altres
+		mov r10, #1
+		.LavanPos:
+			ldrb r11, [r8, r10]
+			sub r10, #1
+			strb r11, [r8, r10]
+			add r10, #2
+			cmp r10, r5
+			blo .LavanPos
+		sub r5, #1
+		
+		@; guardem el PID i el numero de zocalo
+		ldr r8, =_gd_pcbs
+		mov r10, #24
+		mla r11, r10, r9, r8
+		ldr r10, [r11]
+		mov r10, r10, lsl #4		@; movem 4 posicions a l'esquerra perque el pidz es (pid + zoc)
+		orr r10, r9
+		str r10, [r6]
+		
+		@; recuperem r15 del proces a restaurar
+		@; sabem que r15 esta al camp PC del PCB
+		ldr r10, [r11, #4]
+		str r10, [r13, #60]
+		
+		@; recuperem el CPSR
+		@; el CPSR es troba en el camp status
+		ldr r10, [r11, #12]
+		msr SPSR, r10
+		
+		@; canviem el mode d'execucio del proces a restaurar
+		mov r10, r13
+		mrs r9, CPSR
+		and r9, #0xFFFFFFE0
+		orr r9, #0x1F
+		msr CPSR, r9
+		
+		@;recuperem el r13, que és el camp SP del PCB
+		ldr r13, [r11, #8]
+		
+		@; copiem el registres guardats del proces i els copiem a la pila del mode IRQ
+		ldr r9, [r13]
+		str r9, [r10, #40]
+		
+		ldr r9, [r13, #4]
+		str r9, [r10, #44]
+		
+		ldr r9, [r13, #8]
+		str r9, [r10, #48]
+		
+		ldr r9, [r13, #12]
+		str r9, [r10, #52]
+		
+		ldr r9, [r13, #16]
+		str r9, [r10, #20]
+		
+		ldr r9, [r13, #20]
+		str r9, [r10, #24]
+		
+		ldr r9, [r13, #24]
+		str r9, [r10, #28]
+		
+		ldr r9, [r13, #28]
+		str r9, [r10, #32]
+		
+		ldr r9, [r13, #32]
+		str r9, [r10]
+		
+		ldr r9, [r13, #36]
+		str r9, [r10, #4]
+		
+		ldr r9, [r13, #40]
+		str r9, [r10, #8]
+		
+		ldr r9, [r13, #44]
+		str r9, [r10, #12]
+		
+		ldr r9, [r13, #48]
+		str r9, [r10, #56]
+		
+		ldr r14, [r13, #52]
+		
+		add r13, #56				
+		
+		@; tornem al mode IRQ
+		mrs r9, CPSR
+		and r9, #0xFFFFFFE0
+		add r9, #0x12		
+		msr CPSR, r9
 	pop {r8-r11, pc}
 
 
