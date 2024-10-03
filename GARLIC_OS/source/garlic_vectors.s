@@ -13,5 +13,10 @@ APIVector:						@; Vector de direcciones de rutinas del API
 	.word	_ga_divmod
 	.word	_ga_divmodL
 	.word	_ga_printf
+	.word	GARLIC_fopen
+	.word	GARLIC_fread
+	.word	GARLIC_fclose
+	
+	
 
 .end

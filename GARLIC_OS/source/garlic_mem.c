@@ -116,10 +116,8 @@ intFunc _gm_cargarPrograma(char *keyName)
 				if (i+1 < phnum)																	
 				{	
 					offset = offset + phentsize;							//actualitzem offset per a que apunti al següent segment del .elf				
-					//fseek(fitxer, offset, SEEK_SET);						//actualitza apuntador per moure el apuntador del fitxer a la posició actual de l'offset
-					//fread(&taulaSeg, 1, sizeof(Elf32_Phdr), fitxer); 		//actualitzem capçalera pel següent segment
 					// Carga la següent entrada de la taula de segments en taulaSeg directament desde el buffer
-					memcpy(&taulaSeg, buffer + offset, sizeof(Elf32_Phdr)); 
+					memcpy(&taulaSeg, buffer + offset, sizeof(Elf32_Phdr));
 				}														
 			}
 		}

@@ -54,4 +54,9 @@ extern int GARLIC_divmodL(long long * num, unsigned int * den,
 extern void GARLIC_printf(char * format, ...);
 
 
+extern FILE * GARLIC_fopen(const char * filename, const char * mode);
+extern int GARLIC_fread(void * buffer, size_t size, size_t numele, FILE * file);
+extern int GARLIC_fclose(FILE * file);
+
+
 #endif // _GARLIC_API_h_
