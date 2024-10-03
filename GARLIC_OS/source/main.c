@@ -87,7 +87,7 @@ int hola(int arg) {
 	GARLIC_divmod(GARLIC_random(), j, &i, &iter);
 	iter++;							// asegurar que hay al menos una iteración
 	
-	for (i = 0; i < iter; i++)		// escribir mensajes
+	for (i = 0; i < 1; i++)		// escribir mensajes
 		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);
 
 	return 0;

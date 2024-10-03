@@ -78,8 +78,8 @@ _gp_rsiVBL:
 		@; mirem si hi ha algun proces a la cua de ready
 		ldr r4, =_gd_nReady
 		ldr r5, [r4]
-		cmp r5, #0
-		beq .Lfi
+		cmp r5, #1
+		ble .Lfi
 		
 		@; mirem si el proces és el del SO
 		ldr r6, =_gd_pidz
@@ -118,7 +118,7 @@ _gp_salvarProc:
 		ldr r8, [r6]	@; sabem que _gd_pidz => PID + num. zocalo
 		and r8, #0xf	@; num. zocalo
 		ldr r9, =_gd_qReady
-		str r8, [r9, r5]
+		strb r8, [r9, r5]
 		
 		@; guardem el valor de R15 en el pcb del proces a desbancar
 		ldr r9, =_gd_pcbs
@@ -137,6 +137,8 @@ _gp_salvarProc:
 		and r10, #0xFFFFFFE0		@; posem a 0 els ultims 5 bits que son els que indiquen el mode d'execució
 		orr r10, #0x1F				@; posem aquest 5 bits a 1 per aplicar el nou mode d'execució
 		msr CPSR, r10
+		
+		sub r13, #56
 		
 		@; apilem el valor dels registres
 		@; agafem els valors de la pila del mode irq (r8 -> SP)
