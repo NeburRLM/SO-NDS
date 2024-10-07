@@ -79,7 +79,7 @@ _gp_rsiVBL:
 		ldr r4, =_gd_nReady
 		ldr r5, [r4]
 		cmp r5, #1
-		ble .Lfi
+		blo .Lfi
 		
 		@; mirem si el proces és el del SO
 		ldr r6, =_gd_pidz
@@ -380,7 +380,7 @@ _gp_crearProc:
 			ble .LomplirRx
 		@; guardem en r14 la direccio de la rutina _gp_terminarProc
 		ldr r8, =_gp_terminarProc
-		str r8, [r7, #56]
+		str r8, [r7, #52]
 		
 		@; guardem en el vector de pcbs la direccio incial de la pila que es on estan guardats els registres
 		str r7, [r6, #8]
