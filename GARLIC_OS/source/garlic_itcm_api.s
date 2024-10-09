@@ -134,5 +134,47 @@ _ga_printf:
 	pop {r4, pc}
 
 
+	.global _ga_wait
+_ga_wait:
+	push {r1-r3, lr}
+	ldr r1, =_gd_sem
+	ldrb r2, [r1, r0]		@;agafem el valor del semafor
+	cmp r2, #1
+	bne .Lwait_noBloq
+	
+	mov r3, #0
+	strb r3, [r1, r0]		@; guardem el valor bloquejat (0)
+	.Lwait_bloq:			@; fem enquesta periodica fins que estigui a 1 (desbloquejat)
+		ldrb r3, [r1, r0]
+		cmp r3, #1
+		bne .Lwait_bloq
+	mov r0, #1
+	b .Lwait_fi
+	
+	.Lwait_noBloq:
+		mov r0, #0
+	
+	.Lwait_fi:
+	pop {r1-r3, pc}
+
+	.global _ga_signal
+_ga_signal:
+	push {r1-r3, lr}
+	ldr r1, =_gd_sem
+	ldrb r2, [r1, r0]
+	cmp r2, #0
+	bne .Lsig_noBloq
+	
+	mov r3, #1
+	strb r3, [r1, r0]
+	mov r0, #1
+	b .Lsig_fi
+	
+	.Lsig_noBloq:
+		mov r0, #0
+		
+	.Lsig_fi:
+	pop {r1-r3, pc}
+
 .end
 

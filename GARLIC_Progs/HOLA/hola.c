@@ -26,7 +26,7 @@ int _start(int arg)				/* función de inicio : no se usa 'main' */
 						// cálculo aleatorio del número de iteraciones 'iter'
 	GARLIC_divmod(GARLIC_random(), j, &i, &iter);
 	iter++;							// asegurar que hay al menos una iteración
-	
+		
 	for (i = 0; i < iter; i++)		// escribir mensajes
 		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);
 

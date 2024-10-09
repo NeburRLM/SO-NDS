@@ -53,5 +53,7 @@ extern int GARLIC_divmodL(long long * num, unsigned int * den,
 		(salto de línia). */
 extern void GARLIC_printf(char * format, ...);
 
+extern int GARLIC_wait(unsigned char sem);
 
+extern int GARLIC_signal(unsigned char sem);
 #endif // _GARLIC_API_h_

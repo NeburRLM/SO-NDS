@@ -13,6 +13,7 @@
 
 #include <GARLIC_API.h>		// inclusión del API para simular un proceso
 int hola(int);				// función que simula la ejecución del proceso
+int adeu(int);
 
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
@@ -33,6 +34,10 @@ void inicializarSistema() {
 	REG_IME = IME_ENABLE;			// activar las interrupciones en general
 	
 	_gd_pcbs[0].keyName = 0x4C524147;	// "GARL"
+	
+	for(int i = 0; i < 8; i++){
+		_gd_sem[i] = 1;
+	}
 }
 
 
@@ -49,8 +54,8 @@ int main(int argc, char **argv) {
 	printf("********************************");
 	printf("*** Inicio fase 1_P\n");
 	
+	_gp_crearProc(adeu, 14, "ADEU", 2);
 	_gp_crearProc(hola, 7, "HOLA", 1);
-	_gp_crearProc(hola, 14, "HOLA", 2);
 
 	while (_gp_numProc() > 1)
 	{
@@ -72,7 +77,7 @@ int main(int argc, char **argv) {
 //------------------------------------------------------------------------------
 int hola(int arg) {
 //------------------------------------------------------------------------------
-	unsigned int i, j, iter;
+	unsigned int i, j, iter, res;
 	
 	if (arg < 0) arg = 0;			// limitar valor máximo y 
 	else if (arg > 3) arg = 3;		// valor mínimo del argumento
@@ -87,8 +92,46 @@ int hola(int arg) {
 	GARLIC_divmod(GARLIC_random(), j, &i, &iter);
 	iter++;							// asegurar que hay al menos una iteración
 	
-	for (i = 0; i < iter; i++)		// escribir mensajes
+	for (i = 0; i < iter; i++){		// escribir mensajes
 		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);
+		res = GARLIC_signal(2);
+		if(res != 1)
+			GARLIC_printf("Esta lliure\n");
+		else
+			GARLIC_printf("He desbloquejat un semafor\n");
+	}
+
+	return 0;
+}
+
+/* Proceso de prueba, con llamadas a las funciones del API del sistema Garlic */
+//------------------------------------------------------------------------------
+int adeu(int arg) {
+//------------------------------------------------------------------------------
+	unsigned int i, j, iter, res;
+	
+	if (arg < 0) arg = 0;			// limitar valor máximo y 
+	else if (arg > 3) arg = 3;		// valor mínimo del argumento
+	
+									// esccribir mensaje inicial
+	GARLIC_printf("-- Programa ADEU  -  PID (%d) --\n", GARLIC_pid());
+	
+	j = 1;							// j = cálculo de 10 elevado a arg
+	for (i = 0; i < arg; i++)
+		j *= 10;
+						// cálculo aleatorio del número de iteraciones 'iter'
+	GARLIC_divmod(GARLIC_random(), j, &i, &iter);
+	iter++;							// asegurar que hay al menos una iteración
+	
+	GARLIC_printf("Hem bloquejo\n");
+	res = GARLIC_wait(2);
+	if(res != 1)
+		GARLIC_printf("No m'he bloquejat\n");
+	else
+		GARLIC_printf("M'han desbloquejat\n");
+	
+	for (i = 0; i < iter; i++)		// escribir mensajes
+		GARLIC_printf("(%d)\t%d: Bye world!\n", GARLIC_pid(), i);
 
 	return 0;
 }
