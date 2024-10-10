@@ -38,6 +38,26 @@ Elf32_Word ferMultiple(Elf32_Word tSeg)
 }
 
 
+
+FILE* _gm_fopen(const char* filename, const char* mode) {
+    char path[256]; 
+    sprintf(path, "/Datos/%s", filename); 
+    
+	return fopen(path, mode); 
+}
+
+
+size_t _gm_fread(void * buffer, size_t size, size_t numele, FILE * file) {
+    return fread(buffer, size, numele, file); 
+}
+
+
+int _gm_fclose(FILE * file) {
+    return fclose(file);  
+}
+
+
+
 /* _gm_cargarPrograma: busca un fichero de nombre "(keyName).elf" dentro del
 					directorio "/Programas/" del sistema de ficheros y carga
 					los segmentos de programa a partir de una posición de
