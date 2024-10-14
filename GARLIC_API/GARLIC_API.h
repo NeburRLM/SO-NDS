@@ -8,6 +8,11 @@
 #ifndef _GARLIC_API_h_
 #define _GARLIC_API_h_
 
+// Definir size_t como un entero sin signo
+typedef unsigned int size_t;
+
+// Declaración de FILE como una estructura vacía (placeholder)
+typedef struct _FILE FILE;
 
 	/* GARLIC_pid: devuelve el identificador del proceso actual */
 extern int GARLIC_pid();
