@@ -22,12 +22,41 @@ caracteres dentro de las ventanas gráficas, que pueden ser 4 o 16 */
 #define PFILS VFILS * PPART // número de filas totales
 
 // Variables
+// Fondos 2 i 3
 int background_2, background_3;
 
 /* _gg_generarMarco: dibuja el marco de la ventana que se indica por parámetro*/
 void _gg_generarMarco(int v)
 {
+	// Obtenir referencia del fons 3
+	u16 *mapPtr_3 = bgGetMapPtr(background_3);	
+	
+	/* Calcular fila (Fv) i columna (Cv) inicial per cada finestra
+	 * Exemple: (v=3) 
+	 * 	Fv = (3 / 2) * 24 = 1 * 24 = 24
+	 * 	Cv = (3 % 2) * 32 = 1 * 32 = 32
+	*/
+    int Fv = (v / PPART) * VFILS; // Fila inicial
+    int Cv = (v % PPART) * VCOLS; // Columna inicial
 
+	// 1. Dibuixar marc superior-esquerra (103)
+	mapPtr_3[Fv * PCOLS + Cv] = 103;
+	
+	// 2. Dibuixar marc superior-dreta (102)
+    mapPtr_3[Fv * PCOLS + (Cv + VCOLS - 1)] = 102;
+	
+	// 3. Dibuixar marc inferior-esquerra (100)
+	
+	// 4. Dibuixar marc inferior-dreta (101)
+    
+	// 5. Dibuixar marc superior (99)
+
+	// 6. Dibuixar marc esquerra (96)
+	
+	// 7. Dibuixar marc dreta (98)
+	
+	// 7. Dibuixar marc inferior (97)
+	
 }
 
 
