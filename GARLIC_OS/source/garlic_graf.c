@@ -46,19 +46,24 @@ void _gg_generarMarco(int v)
     mapPtr_3[Fv * PCOLS + (Cv + VCOLS - 1)] = 102;
 	
 	// 3. Dibuixar marc inferior-esquerra (100)
-	
+	mapPtr_3[(Fv + VFILS - 1) * PCOLS + Cv] = 100;
+
 	// 4. Dibuixar marc inferior-dreta (101)
-    
-	// 5. Dibuixar marc superior (99)
+	mapPtr_3[(Fv + VFILS - 1) * PCOLS + (Cv + VCOLS - 1)] = 101;
 
-	// 6. Dibuixar marc esquerra (96)
-	
-	// 7. Dibuixar marc dreta (98)
-	
-	// 7. Dibuixar marc inferior (97)
-	
+	// 5. Dibuixar marc superior (99) e inferior (97)
+	for (int col = Cv + 1; col < Cv + (VCOLS - 1); col++)
+	{
+        mapPtr_3[Fv * PCOLS + col] = 99;
+        mapPtr_3[(Fv + VFILS - 1) * PCOLS + col] = 97;
+    }
+	// 6. Dibuixar marc esquerra (96) i dreta (98)
+	for (int fila = Fv + 1; fila < Fv + (VFILS - 1); fila++)
+	{
+        mapPtr_3[fila * PCOLS + Cv] = 96;
+		mapPtr_3[fila * PCOLS + (Cv + VCOLS - 1)] = 98;
+    }
 }
-
 
 /* _gg_iniGraf: inicializa el procesador gráfico A para GARLIC 1.0 */
 void _gg_iniGrafA()
@@ -115,8 +120,6 @@ void _gg_iniGrafA()
 	bgUpdate();
 }
 
-
-
 /* _gg_procesarFormato: copia los caracteres del string de formato sobre el
 					  string resultante, pero identifica las marcas de formato
 					  precedidas por '%' e inserta la representación ASCII de
@@ -136,7 +139,6 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 {
 
 }
-
 
 /* _gg_escribir: escribe una cadena de caracteres en la ventana indicada;
 	Parámetros:
