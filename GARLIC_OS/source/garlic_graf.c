@@ -10,13 +10,10 @@
 #include "garlic_system.h"	// definición de funciones y variables de sistema
 #include "garlic_font.h"	// definición gráfica de caracteres
 
-/* definiciones para realizar cálculos relativos a la posición de los
-caracteres dentro de las ventanas gráficas, que pueden ser 4 o 16 */
 #define NVENT 4 // número de ventanas totales
 #define PPART 2 // número de ventanas horizontales
 
-// (particiones de pantalla)
-#define VCOLS 32 // columnas y filas de cualquier ventana
+#define VCOLS 32
 #define VFILS 24
 #define PCOLS VCOLS * PPART // número de columnas totales
 #define PFILS VFILS * PPART // número de filas totales
@@ -155,5 +152,58 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 */
 void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int ventana)
 {
+	/*
+	 * TODO:
+	 * - Provar valor charPndt (si s'inicialitza a 32 o a 0)
+	 * - Si comença a 0, eliminar var indexBuffer (si comença a 32 replantejar) + repassar els charPndt--
+	 *- Descomentar string resultat
+	*/
+	
+	//char resultat[3 * VCOLS + 1];	// Resultat max 3 files (+1 sentinella)
+	
+	char resultat[3] = {'a', 'b', 'c'};	// Test
+	
+	int pControl = _gd_wbfs[ventana].pControl;	// Llegir camp pControl de la finestra actual
+	int  charPndt = pControl & 0xFFFF;			// Llegir el nombre de caracters pendents de lectura (16b)
+	int  numLinea = pControl >> 16;			// Llegir el numero de fila/linea actual (16b)
+	
+	char *pChars = _gd_wbfs[ventana].pChars;	// Buffer finestra actual
+	
+	// Convertir el string de format a text definitiu
+	_gg_procesarFormato(formato, val1, val2, resultat);
+		
+	// Processar text (fi: '\0')
+	char charActual;		// Aux per llegir cada caracter del resultat
+	int indexBuffer = 0;	// Comptador de caracters processats al buffer
+	for(int i = 0; resultat[i] != '\0'; i++)
+	{
+		indexBuffer++;				// Actualitzar comptador
+		charActual = resultat[i];	// LLegir caracter
+		
+		// Cas buffer ple o '\n'
+		if(charActual == '\n' || indexBuffer >= VCOLS)
+		{
+			charPndt--;			// Decrementar caracters pendents a processar
+			swiWaitForVBlank();	// Esperar retroces vertical
+			_gg_escribirLinea(ventana, numLinea, 32 - charPndt);	
+		}
+		else if(charActual == '\t')	// Cas tabulador
+		{
+			charPndt--;			// Decrementar caracters pendents a processar
 
+			// Calcular espais necessaris
+			char tab = 4 - (indexBuffer % 4);
+			for (int j = 0; j < tab; j++)
+			{
+				pChars[indexBuffer] = ' ';	// Plenar buffer local
+				indexBuffer++;
+			}
+		}
+		else	// Cas caracter literal
+		{
+		
+		}
+		
+	}
+	
 }
