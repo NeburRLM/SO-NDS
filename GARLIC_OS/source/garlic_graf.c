@@ -73,7 +73,7 @@ void _gg_iniGrafA()
 	/* Inicialitzar fons grafic 2
 	 * ---
 	 * Especificacions generals:
-	 * Mida mapa = 32x32 posiciones * 2 bytes/posición = 2KB
+	 * Mida mapa = 64x48 posiciones * 2 bytes/posición = 6KB
 	 * Mida baldoses = 128 baldosas * 8x8 píxeles/baldosa * 1 byte/píxel = 8KB
 	 * Dir.ini mapa (norma) = VirtVRAM_Background + mapBase * 2Kbytes
 	 * Dir.ini baldoses = VirtVRAM_Background + tileBase * 16 Kbytes
@@ -84,10 +84,10 @@ void _gg_iniGrafA()
 	background_2 = bgInit(2, BgType_ExRotation, BgSize_ER_512x512, 0, 1);
 	
 	/* Inicialitzar fons grafic 3
-	 * Dir.ini mapa = 0x06000000 + 2 * 2KB = 0x06004096
+	 * Dir.ini mapa = 0x06000000 + 4 * 2KB = 0x06008192
 	 * Dir.ini baldoses = 0x06000000 + 1 * 16KB = 0x06016384 -> Direccio inical baldoses
 	*/
-	background_3 = bgInit(3, BgType_ExRotation, BgSize_ER_512x512, 2, 1);
+	background_3 = bgInit(3, BgType_ExRotation, BgSize_ER_512x512, 4, 1);
 
 	// Prioritzar fons 3 > 2
 	bgSetPriority(background_2, 1);
@@ -99,7 +99,7 @@ void _gg_iniGrafA()
 	// Copiar la paleta de colors
 	dmaCopy(garlic_fontPal, BG_PALETTE, sizeof(garlic_fontPal));
 
-	// Generar els marcos de les finestres de text del fons 3
+	// Generar els marcs del fons 3 a cada finestra
 	for (int i=0; i<NVENT; i++)
 	{
 		_gg_generarMarco(i);
@@ -107,11 +107,11 @@ void _gg_iniGrafA()
 
 	/* Escalar fons 2 i 3
 	 * Los parámetros de escalado se tienen que proporcionar en formato de coma fija 0.24.8.
-	 * 50% = 0b0101 = 0x5
-	 * Format coma fixa (0.24.8) = 0x00000005
+	 * Escala 2 = 50%
 	*/
-	bgSetScale(background_2, 0x00000005, 0x00000005);
-	bgSetScale(background_3, 0x00000005, 0x00000005);
+	int scale = 2 << 8;
+	bgSetScale(background_2, scale, scale);
+	bgSetScale(background_3, scale, scale);
 	
 	// Actualiza todos los fondos despues de realizar rotaciones, escalados o desplazamientos
 	bgUpdate();
@@ -156,7 +156,8 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 	 * TODO:
 	 * - Provar valor charPndt (si s'inicialitza a 32 o a 0)
 	 * - Si comença a 0, eliminar var indexBuffer (si comença a 32 replantejar) + repassar els charPndt--
-	 *- Descomentar string resultat
+	 * - Descomentar string resultat per lo bo
+	 * - Veure com debugar
 	*/
 	
 	//char resultat[3 * VCOLS + 1];	// Resultat max 3 files (+1 sentinella)
