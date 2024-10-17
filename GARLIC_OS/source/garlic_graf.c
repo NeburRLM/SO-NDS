@@ -73,7 +73,7 @@ void _gg_iniGrafA()
 	/* Inicialitzar fons grafic 2
 	 * ---
 	 * Especificacions generals:
-	 * Mida mapa = 64x48 posiciones * 2 bytes/posición = 6KB
+	 * Mida mapa = 64x48 posicions * 2 bytes/posicio = 6KB
 	 * Mida baldoses = 128 baldosas * 8x8 píxeles/baldosa * 1 byte/píxel = 8KB
 	 * Dir.ini mapa (norma) = VirtVRAM_Background + mapBase * 2Kbytes
 	 * Dir.ini baldoses = VirtVRAM_Background + tileBase * 16 Kbytes
@@ -134,7 +134,9 @@ void _gg_iniGrafA()
 void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 																char *resultado)
 {
-
+	
+	
+	
 }
 
 /* _gg_escribir: escribe una cadena de caracteres en la ventana indicada;
@@ -152,59 +154,55 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 */
 void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int ventana)
 {
-	/*
-	 * TODO:
-	 * - Provar valor charPndt (si s'inicialitza a 32 o a 0)
-	 * - Si comença a 0, eliminar var indexBuffer (si comença a 32 replantejar) + repassar els charPndt--
-	 * - Descomentar string resultat per lo bo
-	 * - Veure com debugar
-	*/
-	
-	//char resultat[3 * VCOLS + 1];	// Resultat max 3 files (+1 sentinella)
-	
-	char resultat[3] = {'a', 'b', 'c'};	// Test
+	char resultat[3 * VCOLS + 1];	// Resultat max 3 files (+1 sentinella)
 	
 	int pControl = _gd_wbfs[ventana].pControl;	// Llegir camp pControl de la finestra actual
-	int  charPndt = pControl & 0xFFFF;			// Llegir el nombre de caracters pendents de lectura (16b)
-	int  numLinea = pControl >> 16;			// Llegir el numero de fila/linea actual (16b)
-	
-	char *pChars = _gd_wbfs[ventana].pChars;	// Buffer finestra actual
+	int  charPndt = pControl & 0xFFFF;			// Comptador de caracters fins emplenar el buffer (16b)
+	int  numLinea = pControl >> 16;				// Comptador sobre el numero de fila/linea actual (16b)
 	
 	// Convertir el string de format a text definitiu
 	_gg_procesarFormato(formato, val1, val2, resultat);
 		
 	// Processar text (fi: '\0')
 	char charActual;		// Aux per llegir cada caracter del resultat
-	int indexBuffer = 0;	// Comptador de caracters processats al buffer
 	for(int i = 0; resultat[i] != '\0'; i++)
 	{
-		indexBuffer++;				// Actualitzar comptador
 		charActual = resultat[i];	// LLegir caracter
 		
 		// Cas buffer ple o '\n'
-		if(charActual == '\n' || indexBuffer >= VCOLS)
+		if(charActual == '\n' || charPndt >= VCOLS)
 		{
-			charPndt--;			// Decrementar caracters pendents a processar
+			charPndt = 0;	// Reiniciar comptador
 			swiWaitForVBlank();	// Esperar retroces vertical
-			_gg_escribirLinea(ventana, numLinea, 32 - charPndt);	
+			
+			_gg_escribirLinea(ventana, numLinea, 32 - charPndt);	// Transferir caracters a la finestra
+			numLinea++;	// Comptador +1 fila
+			
+			//Cas hem arribat al final de les files -> Desplacar
+			if (numLinea >= VFILS)
+			{
+				_gg_desplazar(ventana);
+				numLinea = VFILS - 1;	// Tornar a la ultima fila
+			}
 		}
 		else if(charActual == '\t')	// Cas tabulador
 		{
-			charPndt--;			// Decrementar caracters pendents a processar
-
 			// Calcular espais necessaris
-			char tab = 4 - (indexBuffer % 4);
-			for (int j = 0; j < tab; j++)
+			int tab = 4 - (charPndt % 4);
+			// Plenar el buffer amb espais fins que no quedi espai (32)
+			for (int j = 0; j < tab && charPndt < VCOLS; j++)
 			{
-				pChars[indexBuffer] = ' ';	// Plenar buffer local
-				indexBuffer++;
+				_gd_wbfs[ventana].pChars[charPndt] = ' ';
+				charPndt++;
 			}
 		}
 		else	// Cas caracter literal
 		{
-		
+			_gd_wbfs[ventana].pChars[charPndt] = charActual;
+			charPndt++;
 		}
 		
+		// Actualitzar variable pControl amb la linea actual i charPndt
+		_gd_wbfs[ventana].pControl = (numLinea << 16) | charPndt;
 	}
-	
 }
