@@ -134,39 +134,66 @@ void _gg_iniGrafA()
 void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 																char *resultado)
 {
-	int i = 0;			// Comptador per al format
-	int j = 0;			// Comptador per al resultat
-	char buffer[11];	// Buffer per les conversions numeriques (10 digits enter + 1 sentinella)
-	int codi;			// Codi retorn conversions numeriques (0 -> OK, != 0 -> Error)
+	int i = 0;					// Comptador per al format
+	int j = 0;					// Comptador per al resultat
+	unsigned int valorActual;  	// Variable auxiliar per gestionar val1 o val2
+	int valControl = 0;   		// Variable de control per utilitzar val1 o val2
+	char buffer[11];			// Buffer per les conversions numeriques (10 digits enter + 1 sentinella)
+	int codi;					// Codi retorn conversions numeriques (0 -> OK, != 0 -> Error)
+	char *str;					// Buffer per a la marca de tipus string
 	
 	// Processar text (fi: '\0' o 3 linees completes)
 	while (formato[i] != '\0' && j <= 3 * VCOLS)
 	{
 		if (formato[i] == '%')	// Cas marca de format
 		{
-			i++;	// Continuar a la seguent posicio per obtindre el tipus de format
+			i++;	// Seguir amb la seguent posicio per obtindre el tipus de format
+			
+			valorActual = (valControl == 0) ? val1 : val2;	// Usar val1 o val2
+			if(valControl > 1)
+			{
+				valorActual = 0;	// Cas arriben +2 marques de format, ignorar
+			}
 			
 			switch (formato[i])
 			{
 				case 'c':	// Caracter ASCII
-					resultado[j++] = (char) val1;	// Convertir val1 a caracter ASCII
+					resultado[j++] = (char) valorActual;	// Convertir val1 a caracter ASCII
+					valControl++;	// Canviar de val1 a val2 
 					break;
+					
 				case 'd':	// Decimal
-					codi = _gs_num2str_dec(buffer, sizeof(buffer), val1);  // Convertir val1 a string decimal
-					if (codi == 0) {  // Comprovem conversio correcta
+					codi = _gs_num2str_dec(buffer, sizeof(buffer), valorActual);	// Convertir val1 a string decimal
+					if (codi == 0) {	// Comprovem conversio correcta
 						for (int k = 0; buffer[k] != '\0' && j < 3 * VCOLS; k++) {
-							resultado[j++] = buffer[k];  // Copiar la cadena al resultat
+							resultado[j++] = buffer[k];	// Copiar el decimal al resultat
 						}
 					}
+					valControl++;	// Canviar de val1 a val2 
 					break;
+					
 				case 'x':	// Hexadecimal
-					codi = _gs_num2str_hex(buffer, sizeof(buffer), val1);  // Convertir val1 a string hexa
-					if (codi == 0) {  // Comprovem conversio correcta
+					codi = _gs_num2str_hex(buffer, sizeof(buffer), valorActual);	// Convertir val1 a string hexa
+					if (codi == 0) {	// Comprovem conversio correcta
 						for (int k = 0; buffer[k] != '\0' && j < 3 * VCOLS; k++) {
-							resultado[j++] = buffer[k];  // Copiar la cadena al resultat
+							resultado[j++] = buffer[k];	// Copiar el hexa al resultat
 						}
 					}
+					valControl++;	// Canviar de val1 a val2 
 					break;
+					
+				case 's':  	// String
+					str = (char *) valorActual;
+					while (*str != '\0' && j < 3 * VCOLS) {
+						resultado[j++] = *str++; // Copiar el string al resultat
+					}
+					valControl++;	// Canviar de val1 a val2 
+					break;
+
+				case '%':  	// '%'
+					resultado[j++] = '%';	// Afegir '%' al resultat
+					break;
+					
 				default:
 					// Ignorar altres formats desconeguts
 					break;
@@ -220,10 +247,10 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		// Cas buffer ple o '\n'
 		if(charActual == '\n' || charPndt >= VCOLS)
 		{
-			charPndt = 0;	// Reiniciar comptador
 			swiWaitForVBlank();	// Esperar retroces vertical
+			_gg_escribirLinea(ventana, numLinea, charPndt);	// Transferir caracters a la finestra
 			
-			_gg_escribirLinea(ventana, numLinea, 32 - charPndt);	// Transferir caracters a la finestra
+			charPndt = 0;	// Reiniciar comptador
 			numLinea++;	// Comptador +1 fila
 			
 			//Cas hem arribat al final de les files -> Desplacar

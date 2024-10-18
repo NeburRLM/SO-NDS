@@ -46,7 +46,7 @@ int prnt(int arg)				/* Proceso de prueba */
 	if (arg < 0) arg = 0;			// limitar valor máximo y 
 	else if (arg > 3) arg = 3;		// valor mínimo del argumento
 	
-									// esccribir mensaje inicial
+									// escribir mensaje inicial
 	GARLIC_printf("-- Programa PRNT  -  PID (%d) --\n", GARLIC_pid());
 	
 	GARLIC_printf("\nPrueba juego de caracteres:\n");
