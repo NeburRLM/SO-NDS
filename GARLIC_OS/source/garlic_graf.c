@@ -134,9 +134,57 @@ void _gg_iniGrafA()
 void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 																char *resultado)
 {
+	int i = 0;			// Comptador per al format
+	int j = 0;			// Comptador per al resultat
+	char buffer[11];	// Buffer per les conversions numeriques (10 digits enter + 1 sentinella)
+	int codi;			// Codi retorn conversions numeriques (0 -> OK, != 0 -> Error)
 	
+	// Processar text (fi: '\0' o 3 linees completes)
+	while (formato[i] != '\0' && j <= 3 * VCOLS)
+	{
+		if (formato[i] == '%')	// Cas marca de format
+		{
+			i++;	// Continuar a la seguent posicio per obtindre el tipus de format
+			
+			switch (formato[i])
+			{
+				case 'c':	// Caracter ASCII
+					resultado[j++] = (char) val1;	// Convertir val1 a caracter ASCII
+					break;
+				case 'd':	// Decimal
+					codi = _gs_num2str_dec(buffer, sizeof(buffer), val1);  // Convertir val1 a string decimal
+					if (codi == 0) {  // Comprovem conversio correcta
+						for (int k = 0; buffer[k] != '\0' && j < 3 * VCOLS; k++) {
+							resultado[j++] = buffer[k];  // Copiar la cadena al resultat
+						}
+					}
+					break;
+				case 'x':	// Hexadecimal
+					codi = _gs_num2str_hex(buffer, sizeof(buffer), val1);  // Convertir val1 a string hexa
+					if (codi == 0) {  // Comprovem conversio correcta
+						for (int k = 0; buffer[k] != '\0' && j < 3 * VCOLS; k++) {
+							resultado[j++] = buffer[k];  // Copiar la cadena al resultat
+						}
+					}
+					break;
+				default:
+					// Ignorar altres formats desconeguts
+					break;
+			}
+			
+			i++;	// Continuar al seguent caracter
+		}
+		else	// Cas caracter literal
+		{
+			if (j < 3 * VCOLS)
+			{
+				resultado[j++] = formato[i++];	// Copiar caracter literal al resultat
+			}
+		}
+	}
 	
-	
+	// Assegurar que el resultat acabi amb sentinella
+	resultado[j] = '\0';
 }
 
 /* _gg_escribir: escribe una cadena de caracteres en la ventana indicada;
