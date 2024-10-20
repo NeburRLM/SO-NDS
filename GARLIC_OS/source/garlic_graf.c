@@ -22,11 +22,15 @@
 // Fondos 2 i 3
 int background_2, background_3;
 
+// Punter als bitmaps dels fons 2 i 3
+u16 *mapPtr_2, *mapPtr_3;
+
+
 /* _gg_generarMarco: dibuja el marco de la ventana que se indica por parámetro*/
 void _gg_generarMarco(int v)
 {
 	// Obtenir referencia del fons 3
-	u16 *mapPtr_3 = bgGetMapPtr(background_3);	
+	mapPtr_3 = bgGetMapPtr(background_3);	
 	
 	/* Calcular fila (Fv) i columna (Cv) inicial per cada finestra
 	 * Exemple: (v=3) 
