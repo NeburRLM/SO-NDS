@@ -29,9 +29,6 @@ u16 *mapPtr_2, *mapPtr_3;
 /* _gg_generarMarco: dibuja el marco de la ventana que se indica por parámetro*/
 void _gg_generarMarco(int v)
 {
-	// Obtenir referencia del fons 3
-	mapPtr_3 = bgGetMapPtr(background_3);	
-	
 	/* Calcular fila (Fv) i columna (Cv) inicial per cada finestra
 	 * Exemple: (v=3) 
 	 * 	Fv = (3 / 2) * 24 = 1 * 24 = 24
@@ -102,6 +99,10 @@ void _gg_iniGrafA()
 	
 	// Copiar la paleta de colors
 	dmaCopy(garlic_fontPal, BG_PALETTE, sizeof(garlic_fontPal));
+
+	// Obtenir referencia del fons 2 i 3 (per poder escriure sobre el bitmap)
+	mapPtr_2 = bgGetMapPtr(background_2);
+	mapPtr_3 = bgGetMapPtr(background_3);
 
 	// Generar els marcs del fons 3 a cada finestra
 	for (int i=0; i<NVENT; i++)
@@ -236,12 +237,12 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 	char resultat[3 * VCOLS + 1];	// Resultat max 3 files (+1 sentinella)
 	
 	int pControl = _gd_wbfs[ventana].pControl;	// Llegir camp pControl de la finestra actual
-	int  charPndt = pControl & 0xFFFF;			// Comptador de caracters fins emplenar el buffer (16b)
-	int  numLinea = pControl >> 16;				// Comptador sobre el numero de fila/linea actual (16b)
+	int charPndt = pControl & 0xFFFF;			// Comptador de caracters fins emplenar el buffer (16b)
+	int numLinea = pControl >> 16;				// Comptador sobre el numero de fila/linea actual (16b)
 	
 	// Convertir el string de format a text definitiu
 	_gg_procesarFormato(formato, val1, val2, resultat);
-		
+	
 	// Processar text (fi: '\0')
 	char charActual;		// Aux per llegir cada caracter del resultat
 	for(int i = 0; resultat[i] != '\0'; i++)
@@ -253,7 +254,7 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		{
 			swiWaitForVBlank();	// Esperar retroces vertical
 			_gg_escribirLinea(ventana, numLinea, charPndt);	// Transferir caracters a la finestra
-			
+
 			charPndt = 0;	// Reiniciar comptador
 			numLinea++;	// Comptador +1 fila
 			

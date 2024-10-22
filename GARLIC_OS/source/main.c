@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
 	prnt(1);
 
 	_gg_escribir("*** Final fase 1_G\n", 0, 0, 0);
-
+	
 	while (1)
 	{
 		swiWaitForVBlank();
