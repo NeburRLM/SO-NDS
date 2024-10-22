@@ -250,7 +250,7 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		charActual = resultat[i];	// LLegir caracter
 		
 		// Cas buffer ple o '\n'
-		if(charActual == '\n' || charPndt >= VCOLS)
+		if(charActual == '\n' || charPndt >= VCOLS-1)
 		{
 			swiWaitForVBlank();	// Esperar retroces vertical
 			_gg_escribirLinea(ventana, numLinea, charPndt);	// Transferir caracters a la finestra
@@ -269,16 +269,16 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		{
 			// Calcular espais necessaris
 			int tab = 4 - (charPndt % 4);
-			// Plenar el buffer amb espais fins que no quedi espai (32)
-			for (int j = 0; j < tab && charPndt < VCOLS; j++)
+			// Plenar el buffer amb espais fins que no quedi espai (32 posicions)
+			for (int j = 0; j < tab && charPndt < VCOLS-1; j++)
 			{
-				_gd_wbfs[ventana].pChars[charPndt] = ' ';
+				_gd_wbfs[ventana].pChars[charPndt] = ' '  - 32;
 				charPndt++;
 			}
 		}
 		else	// Cas caracter literal
 		{
-			_gd_wbfs[ventana].pChars[charPndt] = charActual;
+			_gd_wbfs[ventana].pChars[charPndt] = charActual - 32;
 			charPndt++;
 		}
 		
