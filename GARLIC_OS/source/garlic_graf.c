@@ -250,7 +250,7 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		charActual = resultat[i];	// LLegir caracter
 		
 		// Cas buffer ple o '\n'
-		if(charActual == '\n' || charPndt >= VCOLS-1)
+		if(charActual == '\n' || charPndt == VCOLS-1)
 		{
 			swiWaitForVBlank();	// Esperar retroces vertical
 			_gg_escribirLinea(ventana, numLinea, charPndt);	// Transferir caracters a la finestra
@@ -259,7 +259,7 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 			numLinea++;	// Comptador +1 fila
 			
 			//Cas hem arribat al final de les files -> Desplacar
-			if (numLinea >= VFILS)
+			if (numLinea >= VFILS-1)	//numLinea -> [0,23] / VFILS = 24
 			{
 				_gg_desplazar(ventana);
 				numLinea = VFILS - 1;	// Tornar a la ultima fila
