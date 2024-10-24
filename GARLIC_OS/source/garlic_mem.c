@@ -39,20 +39,23 @@ Elf32_Word ferMultiple(Elf32_Word tSeg)
 
 
 
-FILE* _gm_fopen(const char* filename, const char* mode) {
-    char path[256]; 
+FILE* _gm_fopen(const char* filename, const char* mode)
+{
+    char path[22]; //"Datos/filename"
     sprintf(path, "/Datos/%s", filename); 
     
 	return fopen(path, mode); 
 }
 
 
-size_t _gm_fread(void * buffer, size_t size, size_t numele, FILE * file) {
+size_t _gm_fread(void * buffer, size_t size, size_t numele, FILE * file)
+{
     return fread(buffer, size, numele, file); 
 }
 
 
-int _gm_fclose(FILE * file) {
+int _gm_fclose(FILE * file)
+{
     return fclose(file);  
 }
 

@@ -18,7 +18,7 @@ int _start(int arg)
     else if (arg > 3) arg = 3;    // Limitar valor màxim de l'argument
 
     // Calcular el tamany de la llista
-    short size = (arg + 1) * 10;
+    short size = 40;	//(arg + 1) * 10
 
     // Generar una llista de números aleatoris
     short arr[size];
@@ -29,7 +29,7 @@ int _start(int arg)
 	//////////////Llegir arxiu de /Datos//////////////
 	GARLIC_printf("\n\n#####Llegint fitxer /Datos/#####\n");
 	// Definir el buffer estàtic de tamany fixe per la lectura de l'arxiu
-    char buffer[1024];  
+    char buffer[64];  	//reducció del tamany per no sobrepassar la pila a la DTCM
 
     // Obrim l'arxiu per llegir
     FILE* inf = GARLIC_fopen("HOLA.txt", "rb");

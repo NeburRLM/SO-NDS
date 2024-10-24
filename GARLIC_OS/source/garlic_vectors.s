@@ -13,9 +13,9 @@ APIVector:						@; Vector de direcciones de rutinas del API
 	.word	_ga_divmod
 	.word	_ga_divmodL
 	.word	_ga_printf
-	.word	_gm_fopen
-	.word	_gm_fread
-	.word	_gm_fclose
+	.word	_ga_fopen
+	.word	_ga_fread
+	.word	_ga_fclose
 	
 	
 
