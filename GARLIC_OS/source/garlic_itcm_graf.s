@@ -51,10 +51,10 @@ _gg_escribirLinea:
 	mov r5, #0	@; R5 = Index baldosa bitmap
 
 .LreadCharPndt:
-	cmp r4, r2		@; Mentre index (R4 -> [0,31]) != charPndt (R2 -> [0,31]) , escriure per pantalla 
+	cmp r4, r2		@; Mentre index (R4 -> [0,32]) != charPndt (R2 -> [0,32]) , escriure per pantalla 
 	beq .LfiEscribir
 	
-	ldrb r7, [r3, r4]	@; R7 = Carregar valor pChars[i++]
+	ldrb r7, [r3, r4]	@; R7 = Carregar valor pChars[i]
 	strh r7, [r6, r5]	@; R7 = Guardar valor pChars[i] sobre el bitmap
 	
 	add r4, #1	@; R4 = i++ sobre buffer pChars
@@ -111,15 +111,24 @@ _gg_desplazar:
 	@; Cas ultima fila, borrar valor baldoses
 .LborrarFila:
 	mov r2, #0		@; R2 = Index baldosa actual
-    mov r3, #0		@; R3 = Valor espai buit ASCII (32)
+    mov r9, #0		@; R9 = Valor espai buit ASCII (32)
+	
+	@; Calcular dir mem baldosa actual i baldosa actual fila superior
+	mla r4, r1, r3, r0 		@; R4 = Dir. fila actual (fila * PCOLS)
+	sub r6, r1, #1			@; R6 = Fila superior (fila actual - 1)
+	mla r5, r6, r3, r0 		@; R5 = Dir. fila superior (fila superior * PCOLS)
 	
 	@; Borrar baldoses ultima fila
 	.LborrarBaldoses:
 		cmp r2, r7	@; Mentre no arribem a la ultima baldosa de la fila
 		beq .Lfidespl	@; Final programa
 		
-		mla r4, r1, r3, r0	@; R4 = Dir. fila actual (ultima fila)
-		strh r3, [r4, r2]	@; Guardar espai buit en la baldosa actual
+		@; Guardar valor baldosa a fila superior
+		ldrh r8, [r4, r2]	@; Accedir valor baldosa fila actual
+		strh r8, [r5, r2]	@; Guardar valor baldosa en fila superior
+		
+		@; Borrar valor baldosa fila actual
+		strh r9, [r4, r2]	@; Guardar espai buit en la baldosa actual
 		add r2, #2			@; baldosa++
 		b .LborrarBaldoses
 		

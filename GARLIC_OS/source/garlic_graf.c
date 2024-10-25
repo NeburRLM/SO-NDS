@@ -26,6 +26,51 @@ int background_2, background_3;
 u16 *mapPtr_2, *mapPtr_3;
 
 
+/* normalitzarChar: Rutina de soport per convertir els caracters ASCII extended (128-255) que la nostra paleta NO suporta, als seus equivalents 
+	Per exemple: à -> a
+	Parámetros:
+		c	->	char en format ASCII extended a transformar
+*/
+unsigned char normalitzarChar(unsigned char c)
+{
+    // Cas caracter ASCII
+    if (c < 128) {
+        return c;
+    }
+    
+    // Normalitzar caracters
+    switch (c) {
+        case 0xC0: case 0xC1: case 0xC2: case 0xC3: case 0xC4: case 0xC5:  // À Á Â Ã Ä Å
+            return 'A';
+        case 0xE0: case 0xE1: case 0xE2: case 0xE3: case 0xE4: case 0xE5:  // à á â ã ä å
+            return 'a';
+        case 0xC8: case 0xC9: case 0xCA: case 0xCB:  // È É Ê Ë
+            return 'E';
+        case 0xE8: case 0xE9: case 0xEA: case 0xEB:  // è é ê ë
+            return 'e';
+        case 0xCC: case 0xCD: case 0xCE: case 0xCF:  // Ì Í Î Ï
+            return 'I';
+        case 0xEC: case 0xED: case 0xEE: case 0xEF:  // ì í î ï
+            return 'i';
+        case 0xD2: case 0xD3: case 0xD4: case 0xD5: case 0xD6:  // Ò Ó Ô Õ Ö
+            return 'O';
+        case 0xF2: case 0xF3: case 0xF4: case 0xF5: case 0xF6:  // ò ó ô õ ö
+            return 'o';
+        case 0xD9: case 0xDA: case 0xDB: case 0xDC:  // Ù Ú Û Ü
+            return 'U';
+        case 0xF9: case 0xFA: case 0xFB: case 0xFC:  // ù ú û ü
+            return 'u';
+        case 0xD1:  // Ñ
+            return 'N';
+        case 0xF1:  // ñ
+            return 'n';
+			
+        // Cas caracter no suportat, retornar '?'
+        default:
+            return '?';
+    }
+}
+
 /* _gg_generarMarco: dibuja el marco de la ventana que se indica por parámetro*/
 void _gg_generarMarco(int v)
 {
@@ -145,10 +190,10 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 	int valControl = 0;   		// Variable de control per utilitzar val1 o val2
 	char buffer[11];			// Buffer per les conversions numeriques (10 digits enter + 1 sentinella)
 	int codi;					// Codi retorn conversions numeriques (0 -> OK, != 0 -> Error)
-	char *str;					// Buffer per a la marca de tipus string
+	unsigned char *str;			// Buffer per a la marca de tipus string
 	
-	// Processar text (fi: '\0' o 3 linees completes)
-	while (formato[i] != '\0' && j <= 3 * VCOLS)
+	// Processar text (fi: '\0')
+	while (formato[i] != '\0')
 	{
 		if (formato[i] == '%')	// Cas marca de format
 		{
@@ -157,61 +202,76 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 			valorActual = (valControl == 0) ? val1 : val2;	// Usar val1 o val2
 			if(valControl > 1)
 			{
-				valorActual = 0;	// Cas arriben +2 marques de format, ignorar
+				// Ignorar altres formats desconeguts - Retornar format (p ex. '%i')
+				resultado[j++] = '%';
+				resultado[j++] = formato[i];
 			}
-			
-			switch (formato[i])
+			else
 			{
-				case 'c':	// Caracter ASCII
-					resultado[j++] = (char) valorActual;	// Convertir val1 a caracter ASCII
-					valControl++;	// Canviar de val1 a val2 
-					break;
-					
-				case 'd':	// Decimal
-					codi = _gs_num2str_dec(buffer, sizeof(buffer), valorActual);	// Convertir val1 a string decimal
-					if (codi == 0) {	// Comprovem conversio correcta
-						for (int k = 0; buffer[k] != '\0' && j < 3 * VCOLS; k++) {
-							resultado[j++] = buffer[k];	// Copiar el decimal al resultat
+				switch (formato[i])
+				{
+					case 'c':	// Caracter ASCII
+						resultado[j++] = normalitzarChar((char) valorActual);	// Convertir val1 a caracter ASCII
+						valControl++;	// Canviar de val1 a val2 
+						break;
+						
+					case 'd':	// Decimal
+						codi = _gs_num2str_dec(buffer, sizeof(buffer), valorActual);	// Convertir val1 a string decimal
+						if (codi == 0) {	// Comprovem conversio correcta
+							for (int k = 0; buffer[k] != '\0'; k++) {
+								// El buffer guarda ' ' si el numero no ocupa totes les posicions del buffer, ignorar
+								if (buffer[k] != ' ')
+								{
+									resultado[j++] = buffer[k];	// Copiar el decimal al resultat
+								}
+							}
+							valControl++;	// Canviar de val1 a val2 
 						}
-					}
-					valControl++;	// Canviar de val1 a val2 
-					break;
-					
-				case 'x':	// Hexadecimal
-					codi = _gs_num2str_hex(buffer, sizeof(buffer), valorActual);	// Convertir val1 a string hexa
-					if (codi == 0) {	// Comprovem conversio correcta
-						for (int k = 0; buffer[k] != '\0' && j < 3 * VCOLS; k++) {
-							resultado[j++] = buffer[k];	// Copiar el hexa al resultat
-						}
-					}
-					valControl++;	// Canviar de val1 a val2 
-					break;
-					
-				case 's':  	// String
-					str = (char *) valorActual;
-					while (*str != '\0' && j < 3 * VCOLS) {
-						resultado[j++] = *str++; // Copiar el string al resultat
-					}
-					valControl++;	// Canviar de val1 a val2 
-					break;
+						break;
+						
+					case 'x':	// Hexadecimal
+						codi = _gs_num2str_hex(buffer, sizeof(buffer), valorActual);	// Convertir val1 a string hexa
+						if (codi == 0) {	// Comprovem conversio correcta
+							int k = 0;
+							
+							// Ignorar els 0 inicials (p ex. 0x000B -> 0xB)
+							while (buffer[k] == '0' && buffer[k+1] != '\0') {
+								k++;
+							}
 
-				case '%':  	// '%'
-					resultado[j++] = '%';	// Afegir '%' al resultat
-					break;
-					
-				default:
-					// Ignorar altres formats desconeguts
-					break;
+							// Copiar valors rellevants al buffer resultat
+							while (buffer[k] != '\0') {
+								resultado[j++] = buffer[k++];
+							}
+							valControl++;  // Canviar de val1 a val2 
+						}
+						break;
+						
+					case 's':  	// String
+						str = (unsigned char *) valorActual;
+						while (*str != '\0') {
+							resultado[j++] = normalitzarChar(*str++);  // Copiar el string normalitzat al resultat
+						}
+						valControl++;	// Canviar de val1 a val2
+						break;
+
+					case '%':  	// '%'
+						resultado[j++] = '%';	// Afegir '%' al resultat
+						break;
+						
+					default:
+						// Ignorar altres formats desconeguts - Retornar format (p ex. '%i')
+						resultado[j++] = '%';
+						resultado[j++] = formato[i];
+						break;
+				}
 			}
 			
 			i++;	// Continuar al seguent caracter
 		}
 		else	// Cas caracter literal
 		{
-			if (j < 3 * VCOLS)
-			{
-				resultado[j++] = formato[i++];	// Copiar caracter literal al resultat
-			}
+			resultado[j++] = formato[i++];	// Copiar caracter literal al resultat
 		}
 	}
 	
@@ -237,8 +297,8 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 	char resultat[3 * VCOLS + 1];	// Resultat max 3 files (+1 sentinella)
 	
 	int pControl = _gd_wbfs[ventana].pControl;	// Llegir camp pControl de la finestra actual
-	int charPndt = pControl & 0xFFFF;			// Comptador de caracters fins emplenar el buffer (16b)
-	int numLinea = pControl >> 16;				// Comptador sobre el numero de fila/linea actual (16b)
+	int charPndt = pControl & 0xFFFF;			// Comptador de caracters fins emplenar el buffer (0,32) (16b)
+	int numLinea = pControl >> 16;				// Comptador sobre el numero de fila/linea actual (0,23) (16b)
 	
 	// Convertir el string de format a text definitiu
 	_gg_procesarFormato(formato, val1, val2, resultat);
@@ -250,16 +310,17 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		charActual = resultat[i];	// LLegir caracter
 		
 		// Cas buffer ple o '\n'
-		if(charActual == '\n' || charPndt == VCOLS-1)
+		if(charActual == '\n' || charPndt == VCOLS)
 		{
 			swiWaitForVBlank();	// Esperar retroces vertical
 			_gg_escribirLinea(ventana, numLinea, charPndt);	// Transferir caracters a la finestra
-
-			charPndt = 0;	// Reiniciar comptador
+			
+			charPndt = ventana == 0 ? 1 : 0;	// Reiniciar comptador (bug ventana 0 es mostra diferent a les altres)
+			
 			numLinea++;	// Comptador +1 fila
 			
 			//Cas hem arribat al final de les files -> Desplacar
-			if (numLinea >= VFILS-1)	//numLinea -> [0,23] / VFILS = 24
+			if (numLinea == VFILS)	//numLinea -> [0,23] / VFILS = 24
 			{
 				_gg_desplazar(ventana);
 				numLinea = VFILS - 1;	// Tornar a la ultima fila
@@ -270,16 +331,14 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 			// Calcular espais necessaris
 			int tab = 4 - (charPndt % 4);
 			// Plenar el buffer amb espais fins que no quedi espai (32 posicions)
-			for (int j = 0; j < tab && charPndt < VCOLS-1; j++)
+			for (int j = 0; j < tab && charPndt < VCOLS; j++)
 			{
-				_gd_wbfs[ventana].pChars[charPndt] = ' '  - 32;
-				charPndt++;
+				_gd_wbfs[ventana].pChars[charPndt++] = ' '  - 32;
 			}
 		}
 		else	// Cas caracter literal
 		{
-			_gd_wbfs[ventana].pChars[charPndt] = charActual - 32;
-			charPndt++;
+			_gd_wbfs[ventana].pChars[charPndt++] = charActual - 32;
 		}
 		
 		// Actualitzar variable pControl amb la linea actual i charPndt
