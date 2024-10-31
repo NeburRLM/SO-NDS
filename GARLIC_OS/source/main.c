@@ -88,14 +88,296 @@ int main(int argc, char **argv) {
 			scanKeys();
 		} while ((keysDown() & KEY_START) == 0);
 		
-		start(4);		// llamada al proceso ORDH con argumento 0
+		start(4);		// llamada al proceso ORDH con argumento 4
 	}
 	else
 		printf("*** Programa \"ORDH\" NO cargado\n");	
 	//////////////////////////////////////////////////////////////////////////
 	
-	printf("*** Final fase 1_M\n");
+	printf("*** Carga de programa HOLA.elf\n");
+	start = _gm_cargarPrograma("HOLA");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(2);		// llamada al proceso HOLA con argumento 2
+	}
+	else
+		printf("*** Programa \"HOLA\" NO cargado\n");
 
+	printf("\n\n\n*** Carga de programa PRNT.elf\n");
+	start = _gm_cargarPrograma("PRNT");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(2);		// llamada al proceso PRNT con argumento 2
+	}
+	else
+		printf("*** Programa \"PRNT\" NO cargado\n");
+	
+	////////////////////////---PROGRAMA USUARI ORDH---////////////////////////
+	printf("\n\n*** Carga de programa ORDH.elf\n");
+	start = _gm_cargarPrograma("ORDH");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pusle tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(1);		// llamada al proceso ORDH con argumento 1
+	}
+	else
+		printf("*** Programa \"ORDH\" NO cargado\n");	
+	//////////////////////////////////////////////////////////////////////////
+	
+	printf("*** Carga de programa HOLA.elf\n");
+	start = _gm_cargarPrograma("HOLA");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(3);		// llamada al proceso HOLA con argumento 3
+	}
+	else
+		printf("*** Programa \"HOLA\" NO cargado\n");
+
+	printf("\n\n\n*** Carga de programa PRNT.elf\n");
+	start = _gm_cargarPrograma("PRNT");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(3);		// llamada al proceso PRNT con argumento 3
+	}
+	else
+		printf("*** Programa \"PRNT\" NO cargado\n");
+	
+	////////////////////////---PROGRAMA USUARI ORDH---////////////////////////
+	printf("\n\n*** Carga de programa ORDH.elf\n");
+	start = _gm_cargarPrograma("ORDH");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pusle tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(2);		// llamada al proceso ORDH con argumento 2
+	}
+	else
+		printf("*** Programa \"ORDH\" NO cargado\n");	
+	//////////////////////////////////////////////////////////////////////////
+	
+	printf("*** Carga de programa HOLA.elf\n");
+	start = _gm_cargarPrograma("HOLA");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(4);		// llamada al proceso HOLA con argumento 4
+	}
+	else
+		printf("*** Programa \"HOLA\" NO cargado\n");
+
+	printf("\n\n\n*** Carga de programa PRNT.elf\n");
+	start = _gm_cargarPrograma("PRNT");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(4);		// llamada al proceso PRNT con argumento 4
+	}
+	else
+		printf("*** Programa \"PRNT\" NO cargado\n");
+	
+	////////////////////////---PROGRAMA USUARI ORDH---////////////////////////
+	printf("\n\n*** Carga de programa ORDH.elf\n");
+	start = _gm_cargarPrograma("ORDH");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pusle tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(3);		// llamada al proceso ORDH con argumento 3
+	}
+	else
+		printf("*** Programa \"ORDH\" NO cargado\n");	
+	//////////////////////////////////////////////////////////////////////////
+	
+	printf("*** Carga de programa HOLA.elf\n");
+	start = _gm_cargarPrograma("HOLA");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(5);		// llamada al proceso HOLA con argumento 5
+	}
+	else
+		printf("*** Programa \"HOLA\" NO cargado\n");
+
+	printf("\n\n\n*** Carga de programa PRNT.elf\n");
+	start = _gm_cargarPrograma("PRNT");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(5);		// llamada al proceso PRNT con argumento 5
+	}
+	else
+		printf("*** Programa \"PRNT\" NO cargado\n");
+	
+	////////////////////////---PROGRAMA USUARI ORDH---////////////////////////
+	printf("\n\n*** Carga de programa ORDH.elf\n");
+	start = _gm_cargarPrograma("ORDH");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pusle tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(4);		// llamada al proceso ORDH con argumento 4
+	}
+	else
+		printf("*** Programa \"ORDH\" NO cargado\n");	
+	//////////////////////////////////////////////////////////////////////////
+	
+	printf("*** Carga de programa HOLA.elf\n");
+	start = _gm_cargarPrograma("HOLA");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(1);		// llamada al proceso HOLA con argumento 1
+	}
+	else
+		printf("*** Programa \"HOLA\" NO cargado\n");
+	
+	printf("\n\n\n*** Carga de programa PRNT.elf\n");
+	start = _gm_cargarPrograma("PRNT");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(5);		// llamada al proceso PRNT con argumento 5
+	}
+	else
+		printf("*** Programa \"PRNT\" NO cargado\n");
+		
+	////////////////////////---PROGRAMA USUARI ORDH---////////////////////////
+	printf("\n\n*** Carga de programa ORDH.elf\n");
+	start = _gm_cargarPrograma("ORDH");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pusle tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(4);		// llamada al proceso ORDH con argumento 4
+	}
+	else
+		printf("*** Programa \"ORDH\" NO cargado\n");	
+	/////////////Prova de què passa quan ens quedem sense memòria/////////////
+	
+	printf("*** Carga de programa HOLA.elf\n");
+	start = _gm_cargarPrograma("HOLA");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(1);		// llamada al proceso HOLA con argumento 1
+	}
+	else
+		printf("*** Programa \"HOLA\" NO cargado\n");
+	
+	printf("\n\n\n*** Carga de programa PRNT.elf\n");
+	start = _gm_cargarPrograma("PRNT");
+	if (start)
+	{
+		printf("*** Direccion de arranque :\n\t\t%p\n", start);
+		printf("*** Pulse tecla \'START\' ::\n\n");
+		do
+		{	swiWaitForVBlank();
+			scanKeys();
+		} while ((keysDown() & KEY_START) == 0);
+		
+		start(5);		// llamada al proceso PRNT con argumento 5
+	}
+	else
+		printf("*** Programa \"PRNT\" NO cargado\n");
+	
+	printf("*** Final fase 1_M\n");
+	
 	while (1)
 	{
 		swiWaitForVBlank();

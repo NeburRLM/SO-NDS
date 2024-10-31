@@ -32,7 +32,7 @@ int _start(int arg)
     char buffer[64];  	//reducció del tamany per no sobrepassar la pila a la DTCM
 
     // Obrim l'arxiu per llegir
-    FILE* inf = GARLIC_fopen("HOLA.txt", "rb");
+    FILE* inf = GARLIC_fopen("file1", "rb");
 	if (inf == 0) {   // Si no s'ha pogut obrir l'arxiu
         GARLIC_printf("Error al obrir l'arxiu\n");
         return -1;
