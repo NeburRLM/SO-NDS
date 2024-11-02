@@ -18,7 +18,6 @@ extern int prnt(int);		// otra función (externa) de test correspondiente
 
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
-
 /* Inicializaciones generales del sistema Garlic */
 //------------------------------------------------------------------------------
 void inicializarSistema() {
@@ -46,7 +45,7 @@ int main(int argc, char **argv) {
 	_gg_escribir("*                              *", 0, 0, 0);
 	_gg_escribir("********************************", 0, 0, 0);
 	_gg_escribir("*** Inicio fase 1_G\n", 0, 0, 0);
-	
+
 	_gd_pidz = 6;	// simular zócalo 6
 	hola(0);
 	_gd_pidz = 7;	// simular zócalo 7

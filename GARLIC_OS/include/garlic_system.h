@@ -68,9 +68,6 @@ extern garlicWBUF _gd_wbfs[4];	// vector con los buffers de 4 ventanas
 
 extern int _gd_stacks[15*128];	// vector de pilas de los procesos de usuario
 
-
-
-
 //------------------------------------------------------------------------------
 //	Rutinas de gestión de procesos (garlic_itcm_proc.s)
 //------------------------------------------------------------------------------
@@ -188,13 +185,19 @@ extern void _gg_escribir(char *formato, unsigned int val1, unsigned int val2,
 extern void _gg_escribirLinea(int v, int f, int n);
 
 
-/* desplazar: rutina de soporte a _gg_escribir(), para desplazar una posición
+/* _gg_desplazar: rutina de soporte a _gg_escribir(), para desplazar una posición
 					hacia arriba todas las filas de la ventana (v) y borrar el
 					contenido de la última fila.
 */
 extern void _gg_desplazar(int v);
 
-
+ /* _gg_setChar: Defineix un nou caracter grafic a partir del codi 128
+	Parámetros:
+		n	->	numero de caracter, entre 128 i 255
+		buffer	->	punter a una matriu de 8x8 bytes (emmagatzemada per files)
+					on cada byte indica l'index de color d'un pixel.
+*/
+extern void _gg_setChar(unsigned char n, unsigned char *buffer);
 
 //------------------------------------------------------------------------------
 //	Rutinas de soporte al sistema (garlic_itcm_sys.s)

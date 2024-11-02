@@ -2,21 +2,25 @@
 
 	"garlic_graf.c" : fase 1 / programador G
 
-	Funciones de gestión del entorno gráfico (ventanas de texto), para GARLIC 1.0
+	Funciones de gestiï¿½n del entorno grï¿½fico (ventanas de texto), para GARLIC 1.0
 
 ------------------------------------------------------------------------------*/
 #include <nds.h>
 
-#include "garlic_system.h"	// definición de funciones y variables de sistema
-#include "garlic_font.h"	// definición gráfica de caracteres
+#include "garlic_system.h"	// definicion de funciones y variables de sistema
+#include "garlic_font.h"	// definicion grafica de caracteres
 
-#define NVENT 4 // número de ventanas totales
-#define PPART 2 // número de ventanas horizontales
+#define NVENT 4 // numero de ventanas totales
+#define PPART 2 // numero de ventanas horizontales
 
 #define VCOLS 32
 #define VFILS 24
-#define PCOLS VCOLS * PPART // número de columnas totales
-#define PFILS VFILS * PPART // número de filas totales
+#define PCOLS VCOLS * PPART // numero de columnas totales
+#define PFILS VFILS * PPART // numero de filas totales
+
+// Constants per als caracters especials (funcio addicional GARLIC_setChar())
+#define NUM_CUSTOM_CHARS 128	// Rang: 128 - 255
+#define TAM_CARACTER 8			// Mida 8x8 per cada caracter especial
 
 // Variables
 // Fondos 2 i 3
@@ -25,10 +29,9 @@ int background_2, background_3;
 // Punter als bitmaps dels fons 2 i 3
 u16 *mapPtr_2, *mapPtr_3;
 
-
 /* normalitzarChar: Rutina de soport per convertir els caracters ASCII extended (128-255) que la nostra paleta NO suporta, als seus equivalents 
-	Per exemple: à -> a
-	Parámetros:
+	Per exemple: ï¿½ -> a
+	Parametros:
 		c	->	char en format ASCII extended a transformar
 */
 unsigned char normalitzarChar(unsigned char c)
@@ -40,29 +43,29 @@ unsigned char normalitzarChar(unsigned char c)
     
     // Normalitzar caracters
     switch (c) {
-        case 0xC0: case 0xC1: case 0xC2: case 0xC3: case 0xC4: case 0xC5:  // À Á Â Ã Ä Å
+        case 0xC0: case 0xC1: case 0xC2: case 0xC3: case 0xC4: case 0xC5:  // ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½
             return 'A';
-        case 0xE0: case 0xE1: case 0xE2: case 0xE3: case 0xE4: case 0xE5:  // à á â ã ä å
+        case 0xE0: case 0xE1: case 0xE2: case 0xE3: case 0xE4: case 0xE5:  // ï¿½ ï¿½ ï¿½ ï¿½ ï¿½ ï¿½
             return 'a';
-        case 0xC8: case 0xC9: case 0xCA: case 0xCB:  // È É Ê Ë
+        case 0xC8: case 0xC9: case 0xCA: case 0xCB:  // ï¿½ ï¿½ ï¿½ ï¿½
             return 'E';
-        case 0xE8: case 0xE9: case 0xEA: case 0xEB:  // è é ê ë
+        case 0xE8: case 0xE9: case 0xEA: case 0xEB:  // ï¿½ ï¿½ ï¿½ ï¿½
             return 'e';
-        case 0xCC: case 0xCD: case 0xCE: case 0xCF:  // Ì Í Î Ï
+        case 0xCC: case 0xCD: case 0xCE: case 0xCF:  // ï¿½ ï¿½ ï¿½ ï¿½
             return 'I';
-        case 0xEC: case 0xED: case 0xEE: case 0xEF:  // ì í î ï
+        case 0xEC: case 0xED: case 0xEE: case 0xEF:  // ï¿½ ï¿½ ï¿½ ï¿½
             return 'i';
-        case 0xD2: case 0xD3: case 0xD4: case 0xD5: case 0xD6:  // Ò Ó Ô Õ Ö
+        case 0xD2: case 0xD3: case 0xD4: case 0xD5: case 0xD6:  // ï¿½ ï¿½ ï¿½ ï¿½ ï¿½
             return 'O';
-        case 0xF2: case 0xF3: case 0xF4: case 0xF5: case 0xF6:  // ò ó ô õ ö
+        case 0xF2: case 0xF3: case 0xF4: case 0xF5: case 0xF6:  // ï¿½ ï¿½ ï¿½ ï¿½ ï¿½
             return 'o';
-        case 0xD9: case 0xDA: case 0xDB: case 0xDC:  // Ù Ú Û Ü
+        case 0xD9: case 0xDA: case 0xDB: case 0xDC:  // ï¿½ ï¿½ ï¿½ ï¿½
             return 'U';
-        case 0xF9: case 0xFA: case 0xFB: case 0xFC:  // ù ú û ü
+        case 0xF9: case 0xFA: case 0xFB: case 0xFC:  // ï¿½ ï¿½ ï¿½ ï¿½
             return 'u';
-        case 0xD1:  // Ñ
+        case 0xD1:  // ï¿½
             return 'N';
-        case 0xF1:  // ñ
+        case 0xF1:  // ï¿½
             return 'n';
 			
         // Cas caracter no suportat, retornar '?'
@@ -71,7 +74,7 @@ unsigned char normalitzarChar(unsigned char c)
     }
 }
 
-/* _gg_generarMarco: dibuja el marco de la ventana que se indica por parámetro*/
+/* _gg_generarMarco: dibuja el marco de la ventana que se indica por parï¿½metro*/
 void _gg_generarMarco(int v)
 {
 	/* Calcular fila (Fv) i columna (Cv) inicial per cada finestra
@@ -108,30 +111,30 @@ void _gg_generarMarco(int v)
     }
 }
 
-/* _gg_iniGraf: inicializa el procesador gráfico A para GARLIC 1.0 */
+/* _gg_iniGraf: inicializa el procesador grï¿½fico A para GARLIC 1.0 */
 void _gg_iniGrafA()
 {
-	videoSetMode(MODE_5_2D);	// Inicialitzar processador gràfic principal (A) en mode 5
+	videoSetMode(MODE_5_2D);	// Inicialitzar processador grï¿½fic principal (A) en mode 5
 	lcdMainOnTop();				// Establir pantalla superior com a principal
 	
-	vramSetBankA(VRAM_A_MAIN_BG_0x06000000);	// Reservar banc de memòria de video A
+	vramSetBankA(VRAM_A_MAIN_BG_0x06000000);	// Reservar banc de memï¿½ria de video A
 
 	/* Inicialitzar fons grafic 2
 	 * ---
 	 * Especificacions generals:
 	 * Mida mapa = 64x48 posicions * 2 bytes/posicio = 6KB
-	 * Mida baldoses = 128 baldosas * 8x8 píxeles/baldosa * 1 byte/píxel = 8KB
+	 * Mida baldoses = 128 baldosas * 8x8 pixeles/baldosa * 1 byte/pï¿½xel = 8KB
 	 * Dir.ini mapa (norma) = VirtVRAM_Background + mapBase * 2Kbytes
 	 * Dir.ini baldoses = VirtVRAM_Background + tileBase * 16 Kbytes
 	 * ---
-	 * Dir.ini mapa = 0x06000000 + 0 * 2KB = 0x06000000 -> Inicialitzem al principi del banc de memoria
-	 * Dir.ini baldoses = 0x06000000 + 1 * 16KB = 0x06016384 -> Direccio inical baldoses
+	 * Dir.ini mapa = 0x06000000
+	 * Dir.ini baldoses = 0x06004000
 	*/
 	background_2 = bgInit(2, BgType_ExRotation, BgSize_ER_512x512, 0, 1);
 	
 	/* Inicialitzar fons grafic 3
-	 * Dir.ini mapa = 0x06000000 + 4 * 2KB = 0x06008192
-	 * Dir.ini baldoses = 0x06000000 + 1 * 16KB = 0x06016384 -> Direccio inical baldoses
+	 * Dir.ini mapa = 0x06002000
+	 * Dir.ini baldoses = 0x06004000
 	*/
 	background_3 = bgInit(3, BgType_ExRotation, BgSize_ER_512x512, 4, 1);
 
@@ -150,13 +153,13 @@ void _gg_iniGrafA()
 	mapPtr_3 = bgGetMapPtr(background_3);
 
 	// Generar els marcs del fons 3 a cada finestra
-	for (int i=0; i<NVENT; i++)
+	for (int i = 0; i < NVENT; i++)
 	{
 		_gg_generarMarco(i);
 	}
 
 	/* Escalar fons 2 i 3
-	 * Los parámetros de escalado se tienen que proporcionar en formato de coma fija 0.24.8.
+	 * Los parametros de escalado se tienen que proporcionar en formato de coma fija 0.24.8.
 	 * Escala 2 = 50%
 	*/
 	int scale = 2 << 8;
@@ -169,17 +172,17 @@ void _gg_iniGrafA()
 
 /* _gg_procesarFormato: copia los caracteres del string de formato sobre el
 					  string resultante, pero identifica las marcas de formato
-					  precedidas por '%' e inserta la representación ASCII de
-					  los valores indicados por parámetro.
-	Parámetros:
-		formato	->	string con marcas de formato (ver descripción _gg_escribir);
-		val1, val2	->	valores a transcribir, sean número de código ASCII (%c),
-					un número natural (%d, %x) o un puntero a string (%s);
+					  precedidas por '%' e inserta la representaciï¿½n ASCII de
+					  los valores indicados por parï¿½metro.
+	Parametros:
+		formato	->	string con marcas de formato (ver descripciï¿½n _gg_escribir);
+		val1, val2	->	valores a transcribir, sean nï¿½mero de cï¿½digo ASCII (%c),
+					un nï¿½mero natural (%d, %x) o un puntero a string (%s);
 		resultado	->	mensaje resultante.
-	Observación:
+	Observacion:
 		Se asume que el string resultante tiene reservado espacio de memoria
 		suficiente para albergar todo el mensaje, incluyendo los caracteres
-		literales del formato y la transcripción en código ASCII de los valores.
+		literales del formato y la transcripciï¿½n en cï¿½digo ASCII de los valores.
 */
 void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 																char *resultado)
@@ -238,7 +241,7 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 							while (buffer[k] == '0' && buffer[k+1] != '\0') {
 								k++;
 							}
-
+							
 							// Copiar valors rellevants al buffer resultat
 							while (buffer[k] != '\0') {
 								resultado[j++] = buffer[k++];
@@ -254,7 +257,7 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 						}
 						valControl++;	// Canviar de val1 a val2
 						break;
-
+						
 					case '%':  	// '%'
 						resultado[j++] = '%';	// Afegir '%' al resultat
 						break;
@@ -280,17 +283,17 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 }
 
 /* _gg_escribir: escribe una cadena de caracteres en la ventana indicada;
-	Parámetros:
+	Parametros:
 		formato	->	string de formato:
-					admite '\n' (salto de línea), '\t' (tabulador, 4 espacios)
-					y códigos entre 32 y 159 (los 32 últimos son caracteres
-					gráficos), además de marcas de format %c, %d, %h y %s (máx.
+					admite '\n' (salto de linea), '\t' (tabulador, 4 espacios)
+					y codigos entre 32 y 159 (los 32 ultimos son caracteres
+					graficos), ademas de marcas de format %c, %d, %h y %s (mï¿½x.
 					2 marcas por string)
 		val1	->	valor a sustituir en la primera marca de formato, si existe
 		val2	->	valor a sustituir en la segunda marca de formato, si existe
-					- los valores pueden ser un código ASCII (%c), un valor
+					- los valores pueden ser un codigo ASCII (%c), un valor
 					  natural de 32 bits (%d, %x) o un puntero a string (%s)
-		ventana	->	número de ventana (0..3)
+		ventana	->	numero de ventana (0..3)
 */
 void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int ventana)
 {
@@ -336,6 +339,10 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 				_gd_wbfs[ventana].pChars[charPndt++] = ' '  - 32;
 			}
 		}
+		else if (charActual >= '\x80' && charActual <= '\xFF')	// Cas caracter custom (128-255 en hexa)
+		{
+			_gd_wbfs[ventana].pChars[charPndt++] = charActual;	// Guardar custom char
+		}
 		else	// Cas caracter literal
 		{
 			_gd_wbfs[ventana].pChars[charPndt++] = charActual - 32;
@@ -344,4 +351,20 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		// Actualitzar variable pControl amb la linea actual i charPndt
 		_gd_wbfs[ventana].pControl = (numLinea << 16) | charPndt;
 	}
+}
+
+
+/* _gg_setChar: escribe una cadena de caracteres en la ventana indicada;
+	Parametros:
+		n	->	numero de caracter ASCII Extended (entre 128 i 255)
+		buffer	->	punter a matriu de 8x8 bytes
+*/
+void _gg_setChar(unsigned char n, unsigned char *buffer)
+{
+    if (n < 128 || n > 255) { return; }	// Comprovar n dins del rang
+
+	// Calcular dir. base baldoses[n]
+    u16 * tileBaseAddress = bgGetGfxPtr(background_2) + (n * 32);
+	// Copiar el buffer (customChar) a la direccio de mem. de les baldoses (VRAM)
+	dmaCopy(buffer, tileBaseAddress, 64);
 }
