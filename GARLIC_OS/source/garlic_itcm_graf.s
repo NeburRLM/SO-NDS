@@ -102,7 +102,7 @@ _gg_desplazar:
 		strh r8, [r5, r2]	@; Guardar valor baldosa en fila superior
 		add r2, #2			@; baldosa++
 		b .LdesplBaldoses
-	
+		
 		@; Continuar a la seguent fila si fila actual ja processada
 	.LdesplSegFila:
 		add r1, #1	@; fila++
@@ -133,7 +133,6 @@ _gg_desplazar:
 		b .LborrarBaldoses
 		
 .Lfidespl:
-
 	pop {r0-r8, pc}
 
 

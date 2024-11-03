@@ -308,49 +308,70 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 	
 	// Processar text (fi: '\0')
 	char charActual;		// Aux per llegir cada caracter del resultat
-	for(int i = 0; resultat[i] != '\0'; i++)
+	int i = 0;				// Index buffer
+	while(resultat[i] != '\0')	// Mentre no trobem el sentinella
 	{
-		charActual = resultat[i];	// LLegir caracter
+		charActual = resultat[i];	// LLegir caracter actual
 		
-		// Cas buffer ple o '\n'
-		if(charActual == '\n' || charPndt == VCOLS)
+		if (charActual == '\n')	/* Cas salt de linea */
 		{
 			swiWaitForVBlank();	// Esperar retroces vertical
 			_gg_escribirLinea(ventana, numLinea, charPndt);	// Transferir caracters a la finestra
 			
-			charPndt = ventana == 0 ? 1 : 0;	// Reiniciar comptador (bug ventana 0 es mostra diferent a les altres)
+			// Actualitzar comptadors
+			numLinea++;
+			charPndt = 0;
 			
-			numLinea++;	// Comptador +1 fila
-			
-			//Cas hem arribat al final de les files -> Desplacar
+			// Cas hem arribat al final de les files -> Desplacar
 			if (numLinea == VFILS)	//numLinea -> [0,23] / VFILS = 24
 			{
 				_gg_desplazar(ventana);
 				numLinea = VFILS - 1;	// Tornar a la ultima fila
 			}
 		}
-		else if(charActual == '\t')	// Cas tabulador
+		else if(charPndt == VCOLS)	/* Cas buffer ple (tornar a llegir i--) */
 		{
-			// Calcular espais necessaris
-			int tab = 4 - (charPndt % 4);
-			// Plenar el buffer amb espais fins que no quedi espai (32 posicions)
-			for (int j = 0; j < tab && charPndt < VCOLS; j++)
+			i--;	// Tornar a llegir ultim valor, ja que charPnt ha llegit 33 valors
+			_gg_escribirLinea(ventana, numLinea, charPndt);	// Transferir caracters a la finestra
+			swiWaitForVBlank();	// Esperar retroces vertical
+			
+			// Actualitzar comptadors
+			numLinea++;
+			charPndt = 0;
+			
+			// Cas hem arribat al final de les files -> Desplacar
+			if (numLinea == VFILS)	//numLinea -> [0,23] / VFILS = 24
 			{
-				_gd_wbfs[ventana].pChars[charPndt++] = ' '  - 32;
+				_gg_desplazar(ventana);
+				numLinea = VFILS - 1;	// Tornar a la ultima fila
 			}
 		}
-		else if (charActual >= '\x80' && charActual <= '\xFF')	// Cas caracter custom (128-255 en hexa)
+		else	/* Altres casos */
 		{
-			_gd_wbfs[ventana].pChars[charPndt++] = charActual;	// Guardar custom char
+			if(charActual == '\t')	/* Cas tabulador */
+			{
+				// Calcular espais necessaris
+				int tab = 4 - (charPndt % 4);
+				// Plenar el buffer amb espais fins que no quedi espai (32 posicions)
+				for (int j = 0; j < tab && charPndt != VCOLS; j++)
+				{
+					_gd_wbfs[ventana].pChars[charPndt++] = ' '  - 32;	// Plenar buffer
+				}
+			}
+			else if(charActual >= '\x80' && charActual <= '\xFF')	/* Cas caracter custom (128-255 en hexa) */
+			{
+				_gd_wbfs[ventana].pChars[charPndt++] = charActual;	// Guardar custom char
+			}
+			else	/* Cas caracter literal */
+			{
+				_gd_wbfs[ventana].pChars[charPndt++] = charActual - 32;
+			}
 		}
-		else	// Cas caracter literal
-		{
-			_gd_wbfs[ventana].pChars[charPndt++] = charActual - 32;
-		}
-		
 		// Actualitzar variable pControl amb la linea actual i charPndt
 		_gd_wbfs[ventana].pControl = (numLinea << 16) | charPndt;
+		i++;
 	}
+	_gd_wbfs[ventana].pControl = (numLinea << 16) | charPndt;
 }
 
 
