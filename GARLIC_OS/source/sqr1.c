@@ -56,7 +56,7 @@ unsigned int sqrtQ12(unsigned int x) {
 // Funcio principal per calcular arrels quadrades aleatories en coma fixa
 //------------------------------------------------------------------------------
 int sqr1(int arg) {
-    unsigned int randNum, sqrtResult, quoEnter, quoDecimal, mod;
+    unsigned int randNum, sqrtResult, quoEnter, quoDecimal, quo, mod;
 	unsigned int den = 4096;	// Format Q12
 
     // Limitar el valor de arg de 1 a 10000
@@ -68,14 +68,15 @@ int sqr1(int arg) {
 	
     for (int i = 0; i < 20; i++) {
         // Generar un valor aleatori entre 1 i 10.000 * arg (+ 1 per no ser 0)
-        randNum = GARLIC_random() % (10000 * arg) + 1;
-        
+        //randNum = GARLIC_random() % (10000 * arg) + 1;
+		GARLIC_divmod(GARLIC_random(), 10000 * arg, &quo, &randNum);	// Convertir valor Q12 a decimal
+		randNum++;	// Cas GARLIC_random o arg = 0
+		
         // Calcular l'arrel quadrada (format Q12) utilitzant el metode de tanteig en coma fixa (0.20.12)
 		sqrtResult = sqrtQ12(randNum);
 		
-		// Convertir valor Q12 a decimal
-		GARLIC_divmod(sqrtResult, den, &quoEnter, &mod);
-		quoDecimal = (mod * 1000) / den;	// El residu continua en Q12, s'ha de convertir
+		GARLIC_divmod(sqrtResult, den, &quoEnter, &mod);	// Convertir valor Q12 a decimal
+		GARLIC_divmod(mod * 1000, den, &quoDecimal, &mod);	// El residu continua en Q12, s'ha de convertir
 		
 		GARLIC_printf("Valor: %d\n", randNum);
 		GARLIC_printf("Arrel Q12: %d,%d\n\n", quoEnter, quoDecimal);

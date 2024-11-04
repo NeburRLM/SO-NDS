@@ -16,7 +16,7 @@ int hola(int);				// función que simula la ejecución del proceso
 extern int prnt(int);		// otra función (externa) de test correspondiente
 							// a un proceso de usuario
 
-extern void setCharTest();	// Joc de proves per als caracters custom
+extern int setCharTest();	// Joc de proves per als caracters custom
 
 extern int sqr1(int);		// Programa usuari divisions
 
