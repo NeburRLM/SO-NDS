@@ -3,7 +3,7 @@
 
 
 // Joc de proves caracters custom
-void setCharTest() {
+int setCharTest() {
 
     // Definir baldoses custom
     unsigned static char rombo[64] = {
@@ -53,5 +53,5 @@ void setCharTest() {
     GARLIC_printf("Barreja \x80 de \xFF figures\x81 ! \n");
 	
 	GARLIC_printf("* Fi TEST\n");
-	
+	return 0;
 }

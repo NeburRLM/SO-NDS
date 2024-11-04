@@ -36,5 +36,8 @@ _gd_wbfs:	.space 4 * (4 + 32)
 	.global _gd_stacks			@; Vector de pilas de los procesos de usuario
 _gd_stacks:	.space 15 * 128 * 4
 
+	.global _gd_sem				@; Vector de semaforos globales tipo mutex
+_gd_sem: .space 8
+
 .end
 

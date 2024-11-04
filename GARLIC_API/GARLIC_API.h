@@ -53,12 +53,14 @@ extern int GARLIC_divmodL(long long * num, unsigned int * den,
 		(salto de l�nia). */
 extern void GARLIC_printf(char * format, ...);
 
-	/* GARLIC_setChar: Defineix un nou caracter grafic a partir del codi 128
-		Par�metros:
-			n	->	numero de caracter, entre 128 i 255
-			buffer	->	punter a una matriu de 8x8 bytes (emmagatzemada per files)
-						on cada byte indica l'index de color d'un pixel.	*/
+/* GARLIC_setChar: Defineix un nou caracter grafic a partir del codi 128
+	Par�metros:
+		n	->	numero de caracter, entre 128 i 255
+		buffer	->	punter a una matriu de 8x8 bytes (emmagatzemada per files)
+					on cada byte indica l'index de color d'un pixel.	*/
 extern void GARLIC_setChar(unsigned char n, unsigned char * buffer);
 
+extern int GARLIC_wait(unsigned char sem);
 
+extern int GARLIC_signal(unsigned char sem);
 #endif // _GARLIC_API_h_

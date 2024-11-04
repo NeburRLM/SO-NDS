@@ -315,7 +315,7 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		
 		if (charActual == '\n')	/* Cas salt de linea */
 		{
-			swiWaitForVBlank();	// Esperar retroces vertical
+			_gp_WaitForVBlank();	// Esperar retroces vertical
 			_gg_escribirLinea(ventana, numLinea, charPndt);	// Transferir caracters a la finestra
 			
 			// Actualitzar comptadors
@@ -333,7 +333,7 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		{
 			i--;	// Tornar a llegir ultim valor, ja que charPnt ha llegit 33 valors
 			_gg_escribirLinea(ventana, numLinea, charPndt);	// Transferir caracters a la finestra
-			swiWaitForVBlank();	// Esperar retroces vertical
+			_gp_WaitForVBlank();	// Esperar retroces vertical
 			
 			// Actualitzar comptadors
 			numLinea++;

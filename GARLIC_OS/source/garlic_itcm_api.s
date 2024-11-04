@@ -127,9 +127,11 @@ _ga_printf:
 	ldr r4, =_gd_pidz		@; R4 = dirección _gd_pidz
 	ldr r3, [r4]
 	and r3, #0x3			@; R3 = ventana de salida (zócalo actual MOD 4)
-	bl _gg_escribir			@; llamada a la función definida en "garlic_graf.c"
+	@;bl _gp_WaitForVBlank
+	@;push {r12}
+	bl _gg_escribir				@; llamada de prueba
+	@;pop {r12}
 	pop {r4, pc}
-
 
 	.global _ga_setchar
 	@;Parámetros
@@ -154,6 +156,47 @@ _ga_setchar:
 .Lend_setChar:
 	pop {r4, pc}
 	
+	.global _ga_wait
+_ga_wait:
+	push {r1-r3, lr}
+	ldr r1, =_gd_sem
+	ldrb r2, [r1, r0]		@; cogemos el valor del semaforo
+	cmp r2, #1				@; si ya esta bloqueado indicamos que no se puede bloquear porque el semaforo ya esta siendo usado por otro proceso
+	bne .Lwait_noBloq
+	
+	mov r3, #0
+	strb r3, [r1, r0]		@; guardamos el valor bloqueado (0)
+	.Lwait_bloq:			@; hacemos encuesta periodica hasta que este a 1 (desbloqueado)
+		ldrb r3, [r1, r0]
+		cmp r3, #1
+		bne .Lwait_bloq
+	mov r0, #1				@; retornamos codigo de desboqueado
+	b .Lwait_fi
+	
+	.Lwait_noBloq:
+		mov r0, #0			@; retornamos codigo de que no puede ser bloqueado por ese semaforo
+	
+	.Lwait_fi:
+	pop {r1-r3, pc}
+
+	.global _ga_signal
+_ga_signal:
+	push {r1-r3, lr}
+	ldr r1, =_gd_sem
+	ldrb r2, [r1, r0]		@; cogemos el valor del semaforo
+	cmp r2, #0
+	bne .Lsig_noBloq
+	
+	mov r3, #1
+	strb r3, [r1, r0]		@; si esta bloqueado lo desbloqueamos (+1)
+	mov r0, #1				@; devolvemos codigo de que hemos desbloqueado un semaforo
+	b .Lsig_fi
+	
+	.Lsig_noBloq:
+		mov r0, #0			@; en caso de que no este bloqueado devolvemos codigo de que no estaba bloqueado
+		
+	.Lsig_fi:
+	pop {r1-r3, pc}
 
 .end
 
