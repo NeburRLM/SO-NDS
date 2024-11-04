@@ -27,7 +27,7 @@ int _start(int arg)
 	GARLIC_printf("-- Programa ORDH --\n");
 	
 	//////////////Llegir arxiu de /Datos//////////////
-	GARLIC_printf("\n\n#####Llegint fitxer /Datos/#####\n");
+	GARLIC_printf("\n\n\n#####Llegint fitxer /Datos/#####");
 	// Definir el buffer estàtic de tamany fixe per la lectura de l'arxiu
     char buffer[64];  	//reducció del tamany per no sobrepassar la pila a la DTCM
 
@@ -49,7 +49,7 @@ int _start(int arg)
     }
     // Tancar l'arxiu
     GARLIC_fclose(inf);
-	GARLIC_printf("\n\n##########################\n\n");
+	GARLIC_printf("##########################\n");
 	//////////////Arxiu llegit de /Datos//////////////
     
 	
@@ -72,7 +72,7 @@ int _start(int arg)
 	{
         GARLIC_printf("%d ", arr[i]);
     }
-    GARLIC_printf("\n");
+    GARLIC_printf("\n\n");
 
     return 0;
 }
