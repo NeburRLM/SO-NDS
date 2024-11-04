@@ -16,6 +16,10 @@ int hola(int);				// función que simula la ejecución del proceso
 extern int prnt(int);		// otra función (externa) de test correspondiente
 							// a un proceso de usuario
 
+extern void setCharTest();	// Joc de proves per als caracters custom
+
+extern int sqr1(int);		// Programa usuari divisions
+
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
 
@@ -53,6 +57,14 @@ int main(int argc, char **argv) {
 	hola(2);
 	_gd_pidz = 5;	// simular zócalo 5
 	prnt(1);
+
+	// Test mostrar noves baldoses (custom chars)
+	_gd_pidz = 6;	// simular zócalo 6
+	setCharTest();
+	
+	// Test calcular l'arrel quadrada de 20 valors aleatoris
+	_gd_pidz = 8;	// simular zócalo 6
+	sqr1(2);		// arg = 2
 
 	_gg_escribir("*** Final fase 1_G\n", 0, 0, 0);
 
