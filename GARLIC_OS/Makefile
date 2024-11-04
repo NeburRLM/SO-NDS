@@ -36,7 +36,7 @@ NITRODATA	:=	nitrofiles
 #-------------------------------------------------------------------------------
 ARCH	:=	-march=armv5te -mlittle-endian
 
-CFLAGS	:=	-Wall -g -O2 \
+CFLAGS	:=	-Wall -gdwarf-3 -O0 \
 			$(ARCH) -mtune=arm946e-s -fomit-frame-pointer -ffast-math
 				# -Wall						: enable all warnings
 				# -g						: enable debug info generation
@@ -147,7 +147,7 @@ $(OUTPUT).elf	:	$(OFILES) $(SFILES)
 #---------------------------------------------------------------------------------
 %.elf:
 	@echo linking $(notdir $@)
-	$(LD)  $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) $(SFILES) $(GARLICAPI)/GARLIC_API.o -o $@
+	$(LD)  $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) $(SFILES) -o $@
 
 #---------------------------------------------------------------------------------
 %.bin.o	:	%.bin

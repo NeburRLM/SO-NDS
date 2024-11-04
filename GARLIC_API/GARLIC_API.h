@@ -8,6 +8,11 @@
 #ifndef _GARLIC_API_h_
 #define _GARLIC_API_h_
 
+// Definir size_t como un entero sin signo
+typedef unsigned int size_t;
+
+// Declaraci�n de FILE como una estructura vac�a (placeholder)
+typedef struct _FILE FILE;
 
 	/* GARLIC_pid: devuelve el identificador del proceso actual */
 extern int GARLIC_pid();
@@ -53,14 +58,19 @@ extern int GARLIC_divmodL(long long * num, unsigned int * den,
 		(salto de l�nia). */
 extern void GARLIC_printf(char * format, ...);
 
-/* GARLIC_setChar: Defineix un nou caracter grafic a partir del codi 128
-	Par�metros:
-		n	->	numero de caracter, entre 128 i 255
-		buffer	->	punter a una matriu de 8x8 bytes (emmagatzemada per files)
-					on cada byte indica l'index de color d'un pixel.	*/
+/* PROG G*/
 extern void GARLIC_setChar(unsigned char n, unsigned char * buffer);
 
+/* PROG P*/
 extern int GARLIC_wait(unsigned char sem);
 
 extern int GARLIC_signal(unsigned char sem);
+
+/* PROG M*/
+extern FILE * GARLIC_fopen(const char * filename, const char * mode);
+
+extern int GARLIC_fread(void * buffer, size_t size, size_t numele, FILE * file);
+
+extern int GARLIC_fclose(FILE * file);
+
 #endif // _GARLIC_API_h_

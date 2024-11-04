@@ -48,13 +48,13 @@ GARLIC_printf:
 	mov lr, pc
 	ldr pc, [r4, #16]		@; llamada indirecta a rutina 0x04
 	pop {r4, pc}
-
+	
 	.global GARLIC_setChar
 GARLIC_setChar:
 	push {r4, lr}
 	mov r4, #0
 	mov lr, pc
-	ldr pc, [r4, #20]		@; llamada indirecta a rutina 0x05 (GARLIC_setChar)
+	ldr pc, [r4, #20]
 	pop {r4, pc}
 
 	.global GARLIC_wait
@@ -72,5 +72,29 @@ GARLIC_signal:
 	mov lr, pc
 	ldr pc, [r4, #28]
 	pop {r4, pc}
+
+	.global GARLIC_fopen
+GARLIC_fopen:
+    push {r4, lr}
+    mov r4, #0               
+    mov lr, pc               
+    ldr pc, [r4, #32]
+    pop {r4, pc}
+
+    .global GARLIC_fread
+GARLIC_fread:
+    push {r4, lr}
+    mov r4, #0
+    mov lr, pc
+    ldr pc, [r4, #36]
+    pop {r4, pc}
+
+    .global GARLIC_fclose
+GARLIC_fclose:
+    push {r4, lr}
+    mov r4, #0
+    mov lr, pc
+    ldr pc, [r4, #40]
+    pop {r4, pc}
 
 .end

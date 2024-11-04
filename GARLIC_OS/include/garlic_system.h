@@ -5,9 +5,8 @@
 
 	Analista-programador: santiago.romani@urv.cat
 	Programador P: ines.ortizf@estudiants.urv.cat
-	Programador M: yyy.yyy@estudiants.urv.cat
+	Programador M: ruben.lopezm@estudiants.urv.cat
 	Programador G: eros.vilar@estudiants.urv.cat
-	Programador T: uuu.uuu@estudiants.urv.cat
 
 ------------------------------------------------------------------------------*/
 #ifndef _GARLIC_SYSTEM_h
@@ -69,6 +68,9 @@ extern garlicWBUF _gd_wbfs[4];	// vector con los buffers de 4 ventanas
 extern int _gd_stacks[15*128];	// vector de pilas de los procesos de usuario
 
 extern char _gd_sem[8];				// vector de semaforos
+
+extern int _gm_primeraPosMem;	// contindr� la primera posici� de mem�ria lliure
+
 
 //------------------------------------------------------------------------------
 //	Rutinas de gesti�n de procesos (garlic_itcm_proc.s)
