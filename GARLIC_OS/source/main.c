@@ -104,11 +104,11 @@ int hola(int arg) {
 	GARLIC_divmod(GARLIC_random(), j, &i, &iter);
 	iter++;							// asegurar que hay al menos una iteración
 	
-	for (i = 0; i < 2; i++){		// escribir mensajes
+	for (i = 0; i < iter; i++){		// escribir mensajes
 		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);
 		res = GARLIC_signal(2);
 		if(res != 1)
-			GARLIC_printf("(%d)\tEsta llibre\n", GARLIC_pid());
+			GARLIC_printf("(%d)\tEsta libre\n", GARLIC_pid());
 		else
 			GARLIC_printf("(%d)\tHe desbloqueado un semaforo\n", GARLIC_pid());
 	}
@@ -136,7 +136,7 @@ int div1(int arg)
 		GARLIC_printf("(%d)\tNo me he bloqueado\n", GARLIC_pid());
 	else
 		GARLIC_printf("(%d)\tMe han desbloqueado\n", GARLIC_pid());
-	for(int j=0; j<2; j++){
+	for(int j=0; j<tam; j++){
 		GARLIC_divmod(numAl[j], 2, &quo, &mod);
 		if(mod==0){
 			GARLIC_printf("(%d)->(%d) es multiplo de 2\n", GARLIC_pid(),numAl[j]);
