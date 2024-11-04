@@ -16,7 +16,6 @@ int _start(int arg)
 	unsigned int tam = 10*arg+1; //Calculamos el tamaño que tendra la lista
 	unsigned int numAl[tam]; //Creamos la lista vacia
 	unsigned int quo, mod;
-	GARLIC_clear();
 	for(int i=0; i<tam; i++){ //Llenamos la lista de valores aleatorios
 		numAl[i]=GARLIC_random();
 	}

@@ -69,33 +69,50 @@ _gp_IntrMain:
 	@; se encarga de actualizar los tics, intercambiar procesos, etc.;
 _gp_rsiVBL:
 	push {r4-r7, lr}
-		@; incrementem el contador de tics
+		@; incremento del contador de tics
 		ldr r4, =_gd_tickCount
 		ldr r5, [r4]
 		add r5, #1
 		str r5, [r4]
 		
-		@; mirem si hi ha algun proces a la cua de ready
+		@;incremento de workTicks
+		ldr r4, =_gd_pidz
+		ldr r4, [r4]
+		mov r5, #0xF
+		and r4, r4, r5			@;r4 = nº zocalo
+		ldr r6, =_gd_pcbs		
+		mov r5, #24
+		mla r7, r5, r4, r6		@;r5 = inicio de la tabla de pcbs del zocalo
+		ldr r4, [r7, #20]		@;accedemos al workTicks
+		mov r6, r4, lsl #8
+		mov r6, r6, lsr #8
+		and r4, r4, #0xFF000000
+		add r6, #1				@;incrementamos los workTicks
+		orr r5, r4, r6
+		str	r5, [r7, #20]
+
+		
+		@; miramos si hay algun proceso en la cola de ready
 		ldr r4, =_gd_nReady
 		ldr r5, [r4]
 		cmp r5, #1
 		blo .Lfi
 		
-		@; mirem si el proces és el del SO
+		@; miramos si el proceso es el del SO
 		ldr r6, =_gd_pidz
 		ldr r7, [r6]
 		tst r7, #0xF
 		beq .Lsalvar
 		
-		@; mirem si el PID es 0
+		@; miramos si el PID es 0
 		tst r7, #0xF0
 		beq .Lrest
 		
-		@; salvar el context
+		@; salvamos el contexto
 		.Lsalvar:
 			bl _gp_salvarProc
 			str r5, [r4]
-		@;restaurar el context
+		@;restauramos el contexto
 		.Lrest:
 			bl _gp_restaurarProc
 			str r5, [r4]
@@ -114,35 +131,35 @@ _gp_rsiVBL:
 	@; R5: nuevo número de procesos en READY (+1)
 _gp_salvarProc:
 	push {r8-r11, lr}
-		@; guardem el numero de zocalo a la ultima posicio de la cua de ready
-		ldr r8, [r6]	@; sabem que _gd_pidz => PID + num. zocalo
-		and r8, #0xf	@; num. zocalo
+		@; guardamos el numero de zocalo en la ultima posición de la cola de ready
+		ldr r8, [r6]				@; sabemos que _gd_pidz => PID + num. zocalo
+		and r8, #0xf				@; num. zocalo
 		ldr r9, =_gd_qReady
 		strb r8, [r9, r5]
 		
-		@; guardem el valor de R15 en el pcb del proces a desbancar
+		@; guardamos el valor de R15 en el pcb del proceso a desbancar
 		ldr r9, =_gd_pcbs
 		mov r10, #24
-		mla r11, r10, r8, r9		@; direccio del pcb del proces
-		ldr r10, [r13, #60]			@; en r13 esta el SP i r15 (PC) esta en la posicio més baixa (60)
+		mla r11, r10, r8, r9		@; direccion del pcb del proceso
+		ldr r10, [r13, #60]			@; en r13 esta el SP i r15 (PC) esta en la posición más baja (60)
 		str r10, [r11, #4]
 		
-		@; guardem el CPSR del proces a desbancar
-		mrs r10, SPSR				@; agafem el SPSR perque es on s'ha guardat el CPSR del proces a desbancar
+		@; guardamos el CPSR del proceso a desbancar
+		mrs r10, SPSR				@; cogemos el SPSR porque es donde se ha guardado el CPSR del proceso a desbancar
 		str r10, [r11, #12]
 		
-		@; canviem el mode d'execució a system
+		@; cambiamos el modo de ejecución a system
 		mov r8, r13
 		mrs r10, CPSR
-		and r10, #0xFFFFFFE0		@; posem a 0 els ultims 5 bits que son els que indiquen el mode d'execució
-		orr r10, #0x1F				@; posem aquest 5 bits a 1 per aplicar el nou mode d'execució
+		and r10, #0xFFFFFFE0		@; ponemos a 0 los ultimos 5 bits que son los que indican el modo de ejecución
+		orr r10, #0x1F				@; ponemos estos 5 bits a 1 para aplicar el nuevo modo de ejecución
 		msr CPSR, r10
 		
-		sub r13, #56
+		sub r13, #56				@; nos ponemos al inicio de la zona de la pila del usuario
 		
-		@; apilem el valor dels registres
-		@; agafem els valors de la pila del mode irq (r8 -> SP)
-		@; els guardem agafan la direccio que hi ha a r13 (SP)
+		@; apilamos el valor de los registros
+		@; cogemos los valores de la pila del modo irq (r8 -> SP)
+		@; los guardamos cogiendo la dirección que hay en r13 (SP)
 		ldr r10, [r8, #40]
 		str r10, [r13]
 		
@@ -184,16 +201,16 @@ _gp_salvarProc:
 		
 		str r14, [r13, #52]
 		
-		@; guardem el valor del registre r13 en el camp SP del PCB
+		@; guardamos el valor del registro r13 en el campo SP del PCB
 		str r13, [r11, #8]
 		
-		@; tornem al mode IRQ
+		@; volvemos al modo IRQ
 		mrs r9, CPSR
 		and r9, #0xFFFFFFE0
 		orr r9, #0x12
 		msr CPSR, r9
 		
-		@; retornem la rutina
+		@; devolvemos la rutina
 		add r5, #1
 	pop {r8-r11, pc}
 
@@ -205,10 +222,10 @@ _gp_salvarProc:
 	@; R6: dirección _gd_pidz
 _gp_restaurarProc:
 	push {r8-r11, lr}
-		@; recuperem el numero de zocalo
+		@; recuperamos el numero de zocalo
 		ldr r8, =_gd_qReady
 		ldrb r9, [r8]
-		@; com treiem el proces de la cua de ready hem de moure tots els altres
+		@; como sacamos el proceso de la cola de ready tenemos que mover todos los otros
 		mov r10, #1
 		.LavanPos:
 			ldrb r11, [r8, r10]
@@ -219,36 +236,36 @@ _gp_restaurarProc:
 			blo .LavanPos
 		sub r5, #1
 		
-		@; guardem el PID i el numero de zocalo
+		@; guardamos el PID i el numero de zocalo
 		ldr r8, =_gd_pcbs
 		mov r10, #24
 		mla r11, r10, r9, r8
 		ldr r10, [r11]
-		mov r10, r10, lsl #4		@; movem 4 posicions a l'esquerra perque el pidz es (pid + zoc)
+		mov r10, r10, lsl #4		@; movemos 4 posiciones a la izquierda porque el pidz es (pid + zoc)
 		orr r10, r9
 		str r10, [r6]
 		
-		@; recuperem r15 del proces a restaurar
-		@; sabem que r15 esta al camp PC del PCB
+		@; recuperamos r15 del proceso a restaurar
+		@; sabemos que en r15 esta el campo PC del PCB
 		ldr r10, [r11, #4]
 		str r10, [r13, #60]
 		
-		@; recuperem el CPSR
-		@; el CPSR es troba en el camp status
+		@; recuperamos el CPSR
+		@; el CPSR se encuentra en el campo status
 		ldr r10, [r11, #12]
 		msr SPSR, r10
 		
-		@; canviem el mode d'execucio del proces a restaurar
+		@; cambiamos el modo de ejecucion del proceso a restaurar
 		mov r10, r13
 		mrs r9, CPSR
 		and r9, #0xFFFFFFE0
 		orr r9, #0x1F
 		msr CPSR, r9
 		
-		@;recuperem el r13, que és el camp SP del PCB
+		@;recuperamos el r13, que es el campo SP del PCB
 		ldr r13, [r11, #8]
 		
-		@; copiem el registres guardats del proces i els copiem a la pila del mode IRQ
+		@; copiamos los registros guardados del proceso y los copiamos en la pila del modo IRQ
 		ldr r9, [r13]
 		str r9, [r10, #40]
 		
@@ -292,7 +309,7 @@ _gp_restaurarProc:
 		
 		add r13, #56				
 		
-		@; tornem al mode IRQ
+		@; volvemos al modo IRQ
 		mrs r9, CPSR
 		and r9, #0xFFFFFFE0
 		add r9, #0x12		
@@ -305,7 +322,7 @@ _gp_restaurarProc:
 	@; R0: número de procesos total
 _gp_numProc:
 	push {r1, lr}
-		mov r0, #1 @;proces que esta en run
+		mov r0, #1 			@;proceso que esta en run
 		ldr r1, =_gd_nReady
 		ldr r1, [r1]
 		add r0, r1
@@ -324,85 +341,86 @@ _gp_numProc:
 	@; R0: 0 si no hay problema, >0 si no se puede crear el proceso
 _gp_crearProc:
 	push {r4-r10, lr}
-		@; mirem quin és el numero de zocalo per si el podem donar o no
+		@; miramos cual es el numero de zocalo por si lo podemos dar o no
 		cmp r1, #0
-		moveq r0, #1	@;farem servir 1 per indicar que l'error és que aquest zocalo es reservat
+		moveq r0, #1	@; usaremos 1 para indicar que el error es que este zocalo es reservado
 		beq .LfinalCP
-		@; per mirar si el zocalo esta ocupat mirarem al vector de _gd_pcbs
+		@; para mirar si el zocalo esta ocupado miraremos el vector de _gd_pcbs
 		ldr r4, =_gd_pcbs
-		mov r5, #24		@; 24 => 6 int's del registre * 4 (ocupació d'un int)
-		mla r6, r5, r1, r4	@; multipliquem r5 i r1 per saber el desplaçament per arribar al PID del zocalo que volem veure i el sumem a r4 que es la direccio inicial del vector de pcbs
+		mov r5, #24		@; 24 => 6 int's del registro * 4 (ocupación de un int)
+		mla r6, r5, r1, r4	@; multiplicamos r5 i r1 para saber el desplazamiento para llegar al PID del zocalo que queremos ver y le sumamos r4 que es la direccion inicial del vector de pcbs
 		ldr r5, [r6]
-		@; si el PID és 0 significa que esta lliure, sino significa que esta ocupat
+		@; si el PID es 0 significa que esta llibre, sino significa que esta ocupado
 		cmp r5, #0
-		movne r0, #2	@;farem servir 2 per indicar que l'error és perque el zocalo esta ocupat
+		movne r0, #2	@; usaremos 2 para indicar que el error es porque el zocalo esta ocupado
 		bne .LfinalCP
 		
-		@; obtenir un nou PID pel nou proces i guardar el nou valor
+		@; obtener un nuevo PID para el nuevo proceso y guardar su nuevo valor
 		ldr r5, =_gd_pidCount
 		ldr r7, [r5]
 		add r7, #1
 		str r7, [r5]
 		str r7, [r6]
 		
-		@; guardem la direccio de la rutina inicial del proces (r0)
-		@; compensem el decrement
+		@; guardamos la dirección de la rutina inicial del proceso (r0)
+		@; compensamos el decremento
 		add r0, #4
 		str r0, [r6, #4]
 		
-		@; guardem els 4 primers caracters del nom (r2)
-		@; 1 caracter son 8 bits, volem els 4 primers llavors -> 4*8 = 32 bits
+		@; guardamos los 4 primeros caracteres del nombre (r2)
+		@; 1 caracter son 8 bits, queremos los 4 primeros entonces -> 4*8 = 32 bits
 		ldr r2, [r2]
 		str r2, [r6, #16]
 		
-		@; calcul de la direccio base de la pila
-		@; els vectors de les piles estan en _gd_stacks[15*128]
+		@; calculo de la direccion base de la pila
+		@; los vectores de las pilas estan en _gd_stacks[15*128]
 		ldr r7, =_gd_stacks
 		@; cada pila ocupa 128*4 = 512B
-		@; 15 piles (0-14)
+		@; 15 pilas (0-14)
 		mov r8, r1
 		sub r8, #1
 		mov r9, #512
 		mul r8, r9
-		add r8, r9		@; desplaçament inici de la pila
-		add r7, r8		@; direccio inici de la pila
+		add r8, r9		@; desplazamiento inicial de la pila
+		add r7, r8		
+		sub r7, #56		@; direccion inicial de la pila
 		
-		@; guardem en la pila del proces els registres
-		@; primer hem de guardar els arguments que tingui el proces, en aquest cas r3
+		@; guardamos en la pila del proceso los registros
+		@; primero tenemos que guardar los argumentos que tenga el proceso, en este caso r3
 		str r3, [r7]
-		@; omplim els registres r0-r12 amb 0
-		mov r8, #0 @; valor pels registres
-		mov r9, #4 @; desplaçament per la pila (en la primera posicio esta l'argument, r0)
+		@; llenamos los registros r0-r12 con 0
+		mov r8, #0 @; valor para los registros
+		mov r9, #4 @; desplazamiento por la pila (en la primera posicion esta el argumento, r0)
 		.LomplirRx:
 			str r8, [r7, r9]
 			add r9, #4
 			cmp r9, #48
 			ble .LomplirRx
-		@; guardem en r14 la direccio de la rutina _gp_terminarProc
+		@; guardamos en r14 la dirección de la rutina _gp_terminarProc
 		ldr r8, =_gp_terminarProc
 		str r8, [r7, #52]
 		
-		@; guardem en el vector de pcbs la direccio incial de la pila que es on estan guardats els registres
+		@; guardamos en el vector de pcbs la dirección incial de la pila que es donde estan guardados los registros
 		str r7, [r6, #8]
 		
-		@; guardem el valor incial del CPSR en el camp Status del vector de pcbs
+		@; guardamos el valor incial del CPSR en el campo Status del vector de pcbs
 		mrs r8, CPSR
 		str r8, [r6, #12]
 		
-		@; guardem el numero de zocalo a la cua de Ready
+		@; guardamos el numero de zocalo en la cola de Ready
 		ldr r8, =_gd_qReady
 		ldr r9, =_gd_nReady
 		ldr r10, [r9]
 		strb r1, [r8, r10]
-		@;incrementem la variable _gd_nReady
+		@;incrementamos la variable _gd_nReady
 		add r10, #1
 		str r10, [r9]
 		
-		@; inicialitzem altres variables del pcb (en aquest cas nomes queda workTicks)
+		@; inicializamos otrasb variables del pcb (en este caso solo queda workTicks)
 		mov r8, #0
 		str r8, [r6, #20]
 		
-		@; retornem amb codi OK
+		@; devolvemos con codigo OK
 		mov r0, #0
 		.LfinalCP:
 		
