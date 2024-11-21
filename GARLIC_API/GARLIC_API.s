@@ -1,7 +1,7 @@
 @;==============================================================================
 @;
 @;	"GARLIC_API.s":	implementación de funciones del API del sistema operativo
-@;					GARLIC 1.0 (descripción de funciones en "GARLIC_API.h")
+@;					GARLIC 2.0 (descripción de funciones en "GARLIC_API.h")
 @;
 @;==============================================================================
 

@@ -1,4 +1,4 @@
-#include <GARLIC_API.h>			/* definicio funcions API del SO GARLIC */
+//#include <GARLIC_API.h>			/* definicio funcions API del SO GARLIC */
 
 // Definir baldoses custom
 

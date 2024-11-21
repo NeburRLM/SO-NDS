@@ -10,8 +10,8 @@
 #include "garlic_system.h"	// definicion de funciones y variables de sistema
 #include "garlic_font.h"	// definicion grafica de caracteres
 
-#define NVENT 4 // numero de ventanas totales
-#define PPART 2 // numero de ventanas horizontales
+#define NVENT 16 // numero de ventanas totales
+#define PPART 4 // numero de ventanas horizontales
 
 #define VCOLS 32
 #define VFILS 24
@@ -21,6 +21,8 @@
 // Constants per als caracters especials (funcio addicional GARLIC_setChar())
 #define NUM_CUSTOM_CHARS 128	// Rang: 128 - 255
 #define TAM_CARACTER 8			// Mida 8x8 per cada caracter especial
+
+const unsigned int char_colors[] = {240, 96, 64};	// amarillo, verde, rojo
 
 // Variables
 // Fondos 2 i 3
@@ -75,7 +77,7 @@ unsigned char normalitzarChar(unsigned char c)
 }
 
 /* _gg_generarMarco: dibuja el marco de la ventana que se indica por par�metro*/
-void _gg_generarMarco(int v)
+void _gg_generarMarco(int v, int color)
 {
 	/* Calcular fila (Fv) i columna (Cv) inicial per cada finestra
 	 * Exemple: (v=3) 
@@ -155,7 +157,7 @@ void _gg_iniGrafA()
 	// Generar els marcs del fons 3 a cada finestra
 	for (int i = 0; i < NVENT; i++)
 	{
-		_gg_generarMarco(i);
+		_gg_generarMarco(i, char_colors[1]);	// COLOR TEST PER PODER FER MAKE INICIAL @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	}
 
 	/* Escalar fons 2 i 3

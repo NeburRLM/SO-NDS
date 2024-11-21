@@ -1,6 +1,6 @@
 @;==============================================================================
 @;
-@;	"garlic_itcm_api.s":	código de las rutinas del API de GARLIC 1.0
+@;	"garlic_itcm_api.s":	código de las rutinas del API de GARLIC 2.0
 @;							(ver "GARLIC_API.h" para descripción de las
 @;							 funciones correspondientes)
 @;
@@ -271,7 +271,7 @@ _ga_delay:
 .Ldelay1:
 	cmp r0, #600
 	movhi r0, #600			@; limitar el número de segundos a 600 (10 minutos)
-	bl _gp_retardarProc
+	@;bl _gp_retardarProc
 .Ldelay2:
 	pop {r2-r3, pc}
 

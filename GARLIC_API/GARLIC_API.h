@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
 
 	"GARLIC_API.h" : cabeceras de funciones del API (Application Program
-					Interface) del sistema operativo GARLIC 1.0 (c�digo fuente
+					Interface) del sistema operativo GARLIC 2.0 (código fuente
 					disponible en "GARLIC_API.s")
 
 ------------------------------------------------------------------------------*/
