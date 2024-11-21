@@ -126,10 +126,10 @@ _ga_printf:
 	push {r4, lr}
 	ldr r4, =_gd_pidz		@; R4 = dirección _gd_pidz
 	ldr r3, [r4]
-	and r3, #0x3			@; R3 = ventana de salida (zócalo actual MOD 4)
+	and r3, #0xf			@; R3 = ventana de salida (zócalo actual MOD 16)
 	bl _gg_escribir			@; llamada a la función definida en "garlic_graf.c"
 	pop {r4, pc}
-
+	
 
 	.global _ga_setchar
 	@;Parámetros
@@ -154,6 +154,138 @@ _ga_setchar:
 .Lend_setChar:
 	pop {r4, pc}
 	
+	.global _ga_wait
+_ga_wait:
+	push {r1-r3, lr}
+	ldr r1, =_gd_sem
+	ldrb r2, [r1, r0]		@; cogemos el valor del semaforo
+	cmp r2, #1				@; si ya esta bloqueado indicamos que no se puede bloquear porque el semaforo ya esta siendo usado por otro proceso
+	bne .Lwait_noBloq
+	
+	mov r3, #0
+	strb r3, [r1, r0]		@; guardamos el valor bloqueado (0)
+	.Lwait_bloq:			@; hacemos encuesta periodica hasta que este a 1 (desbloqueado)
+		ldrb r3, [r1, r0]
+		cmp r3, #1
+		bne .Lwait_bloq
+	mov r0, #1				@; retornamos codigo de desboqueado
+	b .Lwait_fi
+	
+	.Lwait_noBloq:
+		mov r0, #0			@; retornamos codigo de que no puede ser bloqueado por ese semaforo
+	
+	.Lwait_fi:
+	pop {r1-r3, pc}
+
+	.global _ga_signal
+_ga_signal:
+	push {r1-r3, lr}
+	ldr r1, =_gd_sem
+	ldrb r2, [r1, r0]		@; cogemos el valor del semaforo
+	cmp r2, #0
+	bne .Lsig_noBloq
+	
+	mov r3, #1
+	strb r3, [r1, r0]		@; si esta bloqueado lo desbloqueamos (+1)
+	mov r0, #1				@; devolvemos codigo de que hemos desbloqueado un semaforo
+	b .Lsig_fi
+	
+	.Lsig_noBloq:
+		mov r0, #0			@; en caso de que no este bloqueado devolvemos codigo de que no estaba bloqueado
+		
+	.Lsig_fi:
+	pop {r1-r3, pc}
+
+
+	.global _ga_fopen
+_ga_fopen:
+	push {lr}
+	bl _gm_fopen
+	pop {pc}
+	
+	
+	.global _ga_fread
+_ga_fread:
+	push {lr}
+	bl _gm_fread
+	pop {pc}
+	
+	
+	.global _ga_fclose
+_ga_fclose:
+	push {lr}
+	bl _gm_fclose
+	pop {pc}
+
+
+	.global _ga_printchar
+	@;Parámetros
+	@; R0: int vx
+	@; R1: int vy
+	@; R2: char c
+	@; R3: int color
+_ga_printchar:
+	push {r4-r8, lr}
+	mov r6, r0
+	mov r7, r1
+	mov r8, r2
+	ldr r5, =_gd_pidz		@; R5 = dirección _gd_pidz
+	ldr r4, [r5]
+	and r4, #0xf			@; R4 = ventana de salida (zócalo actual)
+	push {r4}				@; pasar 4º parámetro (núm. ventana) por la pila
+	bl _gg_escribirCar
+	add sp, #4				@; eliminar 4º parámetro de la pila
+	pop {r4-r8, pc}
+
+
+	.align 2
+	.global _ga_printmat
+	@;Parámetros
+	@; R0: int vx
+	@; R1: int vy
+	@; R2: char *m[]
+	@; R3: int color
+_ga_printmat:
+	push {r4-r5, lr}
+	ldr r5, =_gd_pidz		@; R5 = dirección _gd_pidz
+	ldr r4, [r5]
+	and r4, #0xf			@; R4 = ventana de salida (zócalo actual)
+	push {r4}				@; pasar 4º parámetro (núm. ventana) por la pila
+	bl _gg_escribirMat
+	add sp, #4				@; eliminar 4º parámetro de la pila
+	pop {r4-r5, pc}
+
+
+	.global _ga_delay
+	@;Parámetros
+	@; R0: int nsec
+_ga_delay:
+	push {r2-r3, lr}
+	ldr r3, =_gd_pidz		@; R3 = dirección _gd_pidz
+	ldr r2, [r3]
+	and r2, #0xf			@; R2 = zócalo actual
+	cmp r0, #0
+	bhi .Ldelay1
+	bl _gp_WaitForVBlank	@; si nsec = 0, solo desbanca el proceso
+	b .Ldelay2				@; y salta al final de la rutina
+.Ldelay1:
+	cmp r0, #600
+	movhi r0, #600			@; limitar el número de segundos a 600 (10 minutos)
+	bl _gp_retardarProc
+.Ldelay2:
+	pop {r2-r3, pc}
+
+
+	.global _ga_clear
+_ga_clear:
+	push {r0-r1, lr}
+	ldr r1, =_gd_pidz
+	ldr r0, [r1]
+	and r0, #0xf			@; R0 = zócalo actual
+	mov r1, #1				@; R1 = 1 -> 16 ventanas
+	bl _gs_borrarVentana
+	pop {r0-r1, pc}
+
 
 .end
 
