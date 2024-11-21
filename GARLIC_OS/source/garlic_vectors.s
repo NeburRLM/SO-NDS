@@ -19,5 +19,9 @@ APIVector:						@; Vector de direcciones de rutinas del API
 	.word	_ga_fopen		@; PROG M
 	.word	_ga_fread		@; PROG M
 	.word	_ga_fclose		@; PROG M
+	.word	_ga_printchar
+	.word	_ga_printmat
+	.word	_ga_delay
+	.word	_ga_clear
 
 .end

@@ -97,13 +97,30 @@ int main(int argc, char **argv) {
 
 	// PROG_P: Crear processos per executar els programes .elf
 	
-	_gp_crearProc(codiCarregarPrograma[0], 7, "HOLA", 1);
-	_gp_crearProc(codiCarregarPrograma[1], 5, "PRNT", 2);
-	_gp_crearProc(codiCarregarPrograma[2], 6, "DIV1", 1);
-	_gp_crearProc(codiCarregarPrograma[3], 10, "ORDH", 1);
-	_gp_crearProc(codiCarregarPrograma[4], 11, "SQR1", 1);
-
-	//_gp_crearProc(codiCarregarPrograma[2], 8, "CUST", 0);				// Falta fase 2 prog M (2 segments)
+	if(codiCarregarPrograma[0] != 0)
+	{
+		_gp_crearProc(codiCarregarPrograma[0], 7, "HOLA", 1);
+	}
+	if(codiCarregarPrograma[1] != 0)
+	{
+		_gp_crearProc(codiCarregarPrograma[1], 5, "PRNT", 2);
+	}
+	if(codiCarregarPrograma[2] != 0)
+	{
+		_gp_crearProc(codiCarregarPrograma[2], 6, "DIV1", 1);
+	}
+	if(codiCarregarPrograma[3] != 0)
+	{
+		_gp_crearProc(codiCarregarPrograma[3], 10, "ORDH", 1);
+	}
+	if(codiCarregarPrograma[4] != 0)
+	{
+		_gp_crearProc(codiCarregarPrograma[4], 11, "SQR1", 1);
+	}
+	if(codiCarregarPrograma[5] != 0)
+	{
+		//_gp_crearProc(codiCarregarPrograma[5], 8, "CUST", 0);				// Falta fase 2 prog M (2 segments)
+	}
 	
 	// PROG_P: Prova disponibilitat del zocalo
 	_gg_escribir("*** Prova d'errors\n", 0, 0, 0);					// pruebas de los 2 posibles errores que puede dar crearProc
