@@ -45,7 +45,7 @@ int _start(int arg)
     } else {
         // Mostrar el contingut de l'arxiu llegit
         GARLIC_printf("-> Contingut de l'arxiu:\n");
-        GARLIC_printf("%.*s\n", (int)bytesRead, buffer);  // Mostrar els bytes llegits en text
+        GARLIC_printf("Bytes read: %d\n%s\n", (int)bytesRead, buffer);  // Mostrar els bytes llegits en text
     }
     // Tancar l'arxiu
     GARLIC_fclose(inf);

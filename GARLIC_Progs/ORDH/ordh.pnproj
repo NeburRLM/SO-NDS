@@ -1,1 +1,1 @@
-<Project name="ORDH"><File path="ordh.c"></File><File path="Makefile"></File></Project>
+<Project name="ORDH"><File path="ordh.c"></File><File path="Makefile"></File><File path="heapsort_functions.c"></File><File path="heapsort.h"></File></Project>

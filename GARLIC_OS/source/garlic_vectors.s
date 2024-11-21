@@ -13,10 +13,15 @@ APIVector:						@; Vector de direcciones de rutinas del API
 	.word	_ga_divmod
 	.word	_ga_divmodL
 	.word	_ga_printf
-	.word	_ga_fopen
-	.word	_ga_fread
-	.word	_ga_fclose
-	
-	
+	.word	_ga_setchar		@; PROG G
+	.word	_ga_wait		@; PROG P
+	.word	_ga_signal		@; PROG P
+	.word	_ga_fopen		@; PROG M
+	.word	_ga_fread		@; PROG M
+	.word	_ga_fclose		@; PROG M
+	.word	_ga_printchar
+	.word	_ga_printmat
+	.word	_ga_delay
+	.word	_ga_clear
 
 .end

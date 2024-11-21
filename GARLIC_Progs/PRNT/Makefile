@@ -48,11 +48,8 @@ LDFLAGS	:=	--oformat elf32-littlearm \
 # make commands
 #-------------------------------------------------------------------------------
 
-# Defines the name of the .elf file in uppercase
-UPPERCASE_TARGET := $(shell echo $(TARGET) | tr 'a-z' 'A-Z')
-
-$(UPPERCASE_TARGET).elf : $(TARGET).o
-	arm-none-eabi-ld $(LDFLAGS) $(TARGET).o $(GARLICAPI)/GARLIC_API.o -o $(UPPERCASE_TARGET).elf
+$(TARGET).elf : $(TARGET).o
+	arm-none-eabi-ld $(LDFLAGS) $(TARGET).o $(GARLICAPI)/GARLIC_API.o -o $(TARGET).elf
 
 $(TARGET).o : $(TARGET).s
 	arm-none-eabi-as $(ASFLAGS) $(TARGET).s -o $(TARGET).o
@@ -66,4 +63,4 @@ $(TARGET).s : $(TARGET).c
 clean : 
 	@rm -fv $(TARGET).s
 	@rm -fv $(TARGET).o
-	@rm -fv $(UPPERCASE_TARGET).elf
+	@rm -fv $(TARGET).elf
