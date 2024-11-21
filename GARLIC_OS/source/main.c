@@ -1,44 +1,34 @@
 /*------------------------------------------------------------------------------
 
-	"main.c" : fase 1 / master
-	
+	"main.c" : fase 2 / progP
+
+	Versión final de GARLIC 2.0
+	(multiplexación, retardar procesos, matar procesos)
+
 ------------------------------------------------------------------------------*/
 #include <nds.h>
+#include <stdlib.h>
 
-#include "garlic_system.h"	// definici�n de funciones y variables de sistema
-
-#include <GARLIC_API.h>		// inclusi�n del API para simular un proceso
-
-char error1, error2;		// variables para guardar el resultado de crearProc
+#include "garlic_system.h"	// definición de funciones y variables de sistema
 
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
-intFunc start;
-intFunc HOLA, PRNT, DIV1, SQR1, CUST, ORDH;
-
-intFunc codiCarregarPrograma[20];	// Vector que guarda la dir de mem al carregar un programa o 0 en cas de error
+const short divFreq0 = -33513982/1024;		// frecuencia de TIMER0 = 1 Hz
 
 
-// Funcio generica per carregar programes
-intFunc carregarProg(unsigned int nomProg)
+/* función para escribir los porcentajes de uso de la CPU de los procesos de los
+		cuatro primeros zócalos, en el caso que la RSI del TIMER0 haya realizado
+		el cálculo */
+void porcentajeUso()
 {
-	_gg_escribir("*** Carga de programa %s.elf\n", nomProg, 0, 0);
-	start = _gm_cargarPrograma((char *) nomProg);
-	if (start)
+	if (_gd_sincMain & 1)			// verificar sincronismo de timer0
 	{
-		_gg_escribir("*** Direccion de arranque :\n\t\t%x\n", (unsigned int) start, 0, 0);
-		_gg_escribir("*** Pulse tecla \'START\' ::\n\n", 0, 0, 0);
-		do
-		{	_gp_WaitForVBlank();
-			scanKeys();
-		} while ((keysDown() & KEY_START) == 0);
-		
-		//start(val);
+		_gd_sincMain &= 0xFFFE;			// poner bit de sincronismo a cero
+		_gg_escribir("***\t%d%%  %d%%", _gd_pcbs[0].workTicks >> 24,
+										_gd_pcbs[1].workTicks >> 24, 0);
+		_gg_escribir("  %d%%  %d%%\n", _gd_pcbs[2].workTicks >> 24,
+										_gd_pcbs[3].workTicks >> 24, 0);
 	}
-	else
-		_gg_escribir("*** Programa \"%s\" NO cargado\n", nomProg, 0, 0);
-
-	return start;	// Retornar dir mem o 0 en cas de error
 }
 
 
@@ -46,105 +36,122 @@ intFunc carregarProg(unsigned int nomProg)
 //------------------------------------------------------------------------------
 void inicializarSistema() {
 //------------------------------------------------------------------------------
-	int v;
+	_gg_iniGrafA();			// inicializar procesadores gráficos
+	_gs_iniGrafB();
+	_gs_dibujarTabla();
 
-	_gg_iniGrafA();			// inicializar procesador grafico A
-	for (v = 0; v < 4; v++)	// para todas las ventanas
-		_gd_wbfs[v].pControl = 0;		// inicializar los buffers de ventana
+	_gd_seed = *punixTime;	// inicializar semilla para números aleatorios con
+	_gd_seed <<= 16;		// el valor de tiempo real UNIX, desplazado 16 bits
 	
-	if (!_gm_initFS())
-	{
-		_gg_escribir("ERROR: no se puede inicializar el sistema de ficheros!", 0, 0, 0);
+	_gd_pcbs[0].keyName = 0x4C524147;		// "GARL"
+	
+	if (!_gm_initFS()) {
+		_gg_escribir("ERROR: ¡no se puede inicializar el sistema de ficheros!", 0, 0, 0);
 		exit(0);
 	}
-	
-	_gd_seed = *punixTime;	// inicializar semilla para numeros aleatorios con
-	_gd_seed <<= 16;		// el valor de tiempo real UNIX, desplazado 16 bits
 
 	irqInitHandler(_gp_IntrMain);	// instalar rutina principal interrupciones
 	irqSet(IRQ_VBLANK, _gp_rsiVBL);	// instalar RSI de vertical Blank
 	irqEnable(IRQ_VBLANK);			// activar interrupciones de vertical Blank
+
+	irqSet(IRQ_TIMER0, _gp_rsiTIMER0);
+	irqEnable(IRQ_TIMER0);				// instalar la RSI para el TIMER0
+	TIMER0_DATA = divFreq0; 
+	TIMER0_CR = 0xC3;  	// Timer Start | IRQ Enabled | Prescaler 3 (F/1024)
+	
 	REG_IME = IME_ENABLE;			// activar las interrupciones en general
-	
-	_gd_pcbs[0].keyName = 0x4C524147;	// "GARL"
-	
-	for(int i = 0; i < 8; i++)
-		_gd_sem[i] = 1;
 }
 
 
 //------------------------------------------------------------------------------
 int main(int argc, char **argv) {
 //------------------------------------------------------------------------------
-	
+	intFunc start;
+	int mtics, v;
+
 	inicializarSistema();
 	
 	_gg_escribir("********************************", 0, 0, 0);
 	_gg_escribir("*                              *", 0, 0, 0);
-	_gg_escribir("* Sistema Operativo GARLIC 1.0 *", 0, 0, 0);
+	_gg_escribir("* Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
 	_gg_escribir("*                              *", 0, 0, 0);
 	_gg_escribir("********************************", 0, 0, 0);
-	_gg_escribir("*** Inicio fase 1_GPM\n", 0, 0, 0);
+	_gg_escribir("*** Inicio fase 2_P\n", 0, 0, 0);
 	
-	// PROG M: Carregar programes a memoria
-	
-	codiCarregarPrograma[0] = carregarProg((unsigned int) "HOLA");
-	codiCarregarPrograma[1] = carregarProg((unsigned int) "PRNT");
-	codiCarregarPrograma[2] = carregarProg((unsigned int) "DIV1");
-	codiCarregarPrograma[3] = carregarProg((unsigned int) "ORDH");
-	codiCarregarPrograma[4] = carregarProg((unsigned int) "SQR1");
-	//codiCarregarPrograma[5] = carregarProg((unsigned int) "CUST");	// Falta fase 2 prog M (2 segments)
-
-	// PROG_P: Crear processos per executar els programes .elf
-	
-	if(codiCarregarPrograma[0] != 0)
-	{
-		_gp_crearProc(codiCarregarPrograma[0], 7, "HOLA", 1);
-	}
-	if(codiCarregarPrograma[1] != 0)
-	{
-		_gp_crearProc(codiCarregarPrograma[1], 5, "PRNT", 2);
-	}
-	if(codiCarregarPrograma[2] != 0)
-	{
-		_gp_crearProc(codiCarregarPrograma[2], 6, "DIV1", 1);
-	}
-	if(codiCarregarPrograma[3] != 0)
-	{
-		_gp_crearProc(codiCarregarPrograma[3], 10, "ORDH", 1);
-	}
-	if(codiCarregarPrograma[4] != 0)
-	{
-		_gp_crearProc(codiCarregarPrograma[4], 11, "SQR1", 1);
-	}
-	if(codiCarregarPrograma[5] != 0)
-	{
-		//_gp_crearProc(codiCarregarPrograma[5], 8, "CUST", 0);				// Falta fase 2 prog M (2 segments)
-	}
-	
-	// PROG_P: Prova disponibilitat del zocalo
-	_gg_escribir("*** Prova d'errors\n", 0, 0, 0);					// pruebas de los 2 posibles errores que puede dar crearProc
-	
-	error1 = _gp_crearProc(codiCarregarPrograma[0], 7, "HOLA", 0);
-	if (error1 == 2)
-		_gg_escribir("El zocalo esta ocupat\n", 0, 0, 0);
+	_gg_escribir("*** Carga de programa HOLA.elf\n", 0, 0, 0);
+	start = _gm_cargarPrograma("HOLA");
+	if (start)
+	{	
+		_gp_crearProc(start, 1, "HOLA", 3);
+		_gp_crearProc(start, 2, "HOLA", 3);
+		_gp_crearProc(start, 3, "HOLA", 3);
 		
-	error2 = _gp_crearProc(codiCarregarPrograma[0], 0, "HOLA", 0);
-	if (error2 == 1)
-		_gg_escribir("El zocalo esta reservat\n", 0, 0, 0);
-	
-	while (_gp_numProc() > 1)	// esperar a que terminen los procesos de usuario
-	{
-		_gp_WaitForVBlank();
-		//_gg_escribir("*** Test %d:%d\n", _gd_tickCount, _gp_numProc(), 1);
-	}
+		while (_gd_tickCount < 240)			// esperar 4 segundos
+		{
+			_gp_WaitForVBlank();
+			porcentajeUso();
+		}
+		_gp_matarProc(1);					// matar proceso 1
+		_gg_escribir("Proceso 1 eliminado\n", 0, 0, 0);
+		_gs_dibujarTabla();
+		
+		while (_gd_tickCount < 480)			// esperar 4 segundos más
+		{
+			_gp_WaitForVBlank();
+			porcentajeUso();
+		}
+		_gp_matarProc(3);					// matar proceso 3
+		_gg_escribir("Proceso 3 eliminado\n", 0, 0, 0);
+		_gs_dibujarTabla();
+		
+		while (_gp_numProc() > 1)			// esperar a que proceso 2 acabe
+		{
+			_gp_WaitForVBlank();
+			porcentajeUso();
+		}
+		_gg_escribir("Proceso 2 terminado\n", 0, 0, 0);
+	} else
+		_gg_escribir("*** Programa NO cargado\n", 0, 0, 0);
 
-	_gg_escribir("*** Final fase 1_GPM\n", 0, 0, 0);
 
-	while (1)
+	_gg_escribir("*** Carga de programa PONG.elf\n", 0, 0, 0);
+	start = _gm_cargarPrograma("PONG");
+	if (start)
 	{
+		for (v = 1; v < 4; v++)	// inicializar buffers de ventanas 1, 2 y 3
+			_gd_wbfs[v].pControl = 0;
+		
+		_gp_crearProc(start, 1, "PONG", 1);
+		_gp_crearProc(start, 2, "PONG", 2);
+		_gp_crearProc(start, 3, "PONG", 3);
+		
+		mtics = _gd_tickCount + 960;
+		while (_gd_tickCount < mtics)		// esperar 16 segundos más
+		{
+			_gp_WaitForVBlank();
+			porcentajeUso();
+		}
+		
+		_gp_matarProc(1);					// matar los 3 procesos a la vez
+		_gp_matarProc(2);
+		_gp_matarProc(3);
+		_gg_escribir("Procesos 1, 2 y 3 eliminados\n", 0, 0, 0);
+		
+		while (_gp_numProc() > 1)	// esperar a que todos los procesos acaben
+		{
+			_gp_WaitForVBlank();
+			porcentajeUso();
+		}
+		
+	} else
+		_gg_escribir("*** Programa NO cargado\n", 0, 0, 0);
+
+
+	_gg_escribir("*** Final fase 2_P\n", 0, 0, 0);
+	_gs_dibujarTabla();
+
+	while(1) {
 		_gp_WaitForVBlank();
-	}
-	
+	}							// parar el procesador en un bucle infinito
 	return 0;
 }
