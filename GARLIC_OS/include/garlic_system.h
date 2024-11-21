@@ -27,6 +27,12 @@ extern int _gd_pidCount;	// Contador de PIDs: se incrementa cada vez que
 extern int _gd_tickCount;	// Contador de tics: se incrementa cada IRQ_VBL,
 							// permite contabilizar el paso del tiempo
 
+extern int _gd_sincMain;	// Sincronismos con programa principal:
+							// bit 0 = 1 indica si se ha acabado de calcular el
+							// 				el uso de la CPU,
+							// bits 1-15 = 1 indica si el proceso del zócalo
+							//				correspondiente ha terminado.
+
 extern int _gd_seed;		// Semilla para generaci�n de n�meros aleatorios
 							// (tiene que ser diferente de cero)
 
