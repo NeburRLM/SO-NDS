@@ -25,6 +25,19 @@ int _gm_initFS()
 }
 
 
+/* _gm_listaProgs: devuelve una lista con los nombres en clave de todos
+			los programas que se encuentran en el directorio "Programas".
+			 Se considera que un fichero es un programa si su nombre tiene
+			8 caracteres y termina con ".elf"; se devuelven sólo los
+			4 primeros caracteres de los programas (nombre en clave).
+			 El resultado es un vector de strings (paso por referencia) y
+			el número de programas detectados */
+int _gm_listaProgs(char* progs[])
+{
+	return 0;
+}
+
+
 // funcio per calcular un valor múltiple de 4
 Elf32_Word ferMultiple(Elf32_Word tSeg)
 {
@@ -66,14 +79,15 @@ int _gm_fclose(FILE * file)
 					los segmentos de programa a partir de una posición de
 					memoria libre, efectuando la reubicación de las referencias
 					a los símbolos del programa según el desplazamiento del
-					código en la memoria destino;
+					código y los datos en la memoria destino;
 	Parámetros:
-		keyName ->	string de 4 caracteres con el nombre en clave del programa
+		zocalo	->	índice del zócalo que indexará el proceso del programa
+		keyName ->	string de 4 carácteres con el nombre en clave del programa
 	Resultado:
 		!= 0	->	dirección de inicio del programa (intFunc)
 		== 0	->	no se ha podido cargar el programa
 */
-intFunc _gm_cargarPrograma(char *keyName)
+intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 {
 
 	char pathFit[20];														//per guardar el keyName rebut per paràmetre
@@ -128,7 +142,7 @@ intFunc _gm_cargarPrograma(char *keyName)
 						//copia el contingut del segment de programa des del buffer en la dirección de memòria _gm_primeraPosMem (_gs_copiaMem(const void *source, void *dest, unsigned int numBytes))
 						_gs_copiaMem((const void *) buffer + taulaSeg.p_offset, (void *) _gm_primeraPosMem, tamanyFile);
 						//aplica reubicancions per ajustar referències
-						_gm_reubicar(buffer, taulaSeg.p_paddr, (unsigned int *) _gm_primeraPosMem);	
+						_gm_reubicar(buffer, taulaSeg.p_paddr, (unsigned int *) _gm_primeraPosMem, 0 , 0);	//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@cuidao
 						//direcció d'inici del programa a la memòria física, tenint en compte totes les reubicacions necessàries perquè el programa s'executi correctament des de la posició en memòria on s'ha carregat
 						adrProg = (intFunc) (_gm_primeraPosMem + entry - taulaSeg.p_paddr);				
 						//actualitzem memòria pel següent programa tenint en compte el tamany del segment actual carregat a memòria											

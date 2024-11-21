@@ -17,34 +17,32 @@
 //	Variables globales del sistema (garlic_dtcm.s)
 //------------------------------------------------------------------------------
 
-extern int _gd_pidz;		// Identificador de proceso (PID) + z�calo
-							// (PID en 28 bits altos, z�calo en 4 bits bajos,
+extern int _gd_pidz;		// Identificador de proceso (PID) + zócalo
+							// (PID en 28 bits altos, zócalo en 4 bits bajos,
 							// cero si se trata del propio sistema operativo)
 
 extern int _gd_pidCount;	// Contador de PIDs: se incrementa cada vez que
-							// se crea un nuevo proceso (m�x. 2^28)
+							// se crea un nuevo proceso (máx. 2^28)
 
 extern int _gd_tickCount;	// Contador de tics: se incrementa cada IRQ_VBL,
 							// permite contabilizar el paso del tiempo
 
-extern int _gd_seed;		// Semilla para generaci�n de n�meros aleatorios
+extern int _gd_sincMain;	// Sincronismos con programa principal:
+							// bit 0 = 1 indica si se ha acabado de calcular el
+							// 				el uso de la CPU,
+							// bits 1-15 = 1 indica si el proceso del zócalo
+							//				correspondiente ha terminado.
+
+extern int _gd_seed;		// Semilla para generación de números aleatorios
 							// (tiene que ser diferente de cero)
 
 
-extern int _gd_nReady;		// N�mero de procesos en cola de READY (0..15)
+extern int _gd_nReady;		// Número de procesos en cola de READY (0..15)
 
 extern char _gd_qReady[16];	// Cola de READY (procesos preparados) : vector
 							// ordenado con _gd_nReady entradas, conteniendo
-							// los identificadores (0..15) de los z�calos de los
-							// procesos (m�x. 15 procesos + sistema operativo)
-
-extern int _gd_nDelay;		// Número de procesos en cola de DELAY (0..15)
-
-extern int _gd_qDelay[16];	// Cola de DELAY (procesos retardados) : vector
-							// con _gd_nDelay entradas, conteniendo los
-							// identificadores de los zócalos (8 bits altos)
-							// más el número de tics restantes (16 bits bajos)
-							// para desbloquear el proceso
+							// los identificadores (0..15) de los zócalos de los
+							// procesos (máx. 15 procesos + sistema operativo)
 
 typedef struct				// Estructura del bloque de control de un proceso
 {							// (PCB: Process Control Block)
@@ -63,28 +61,28 @@ extern garlicPCB _gd_pcbs[16];	// vector de PCBs de los procesos activos
 typedef struct				// Estructura del buffer de una ventana
 {							// (WBUF: Window BUFfer)
 	int pControl;			//	control de escritura en ventana
-							//		16 bits altos: n�mero de l�nea (0..23)
-							//		16 bits bajos: caracteres pendientes (0..32)
-	short pChars[32];		//	vector de 32 caracteres pendientes de escritura
-							//		indicando el c�digo ASCII de cada posici�n
+							//		4 bits altos: código de color actual (0..3)
+							//		12 bits medios: número de línea (0..23)
+							//		16 bits bajos: carácteres pendientes (0..32)
+	char pChars[32];		//	vector de 32 carácteres pendientes de escritura
+							//		indicando el código ASCII de cada posición
 } PACKED garlicWBUF;
 
-extern garlicWBUF _gd_wbfs[16];	// vector con los buffers de 16 ventanas
+extern garlicWBUF _gd_wbfs[4];	// vector con los buffers de 4 ventanas
 
 
 extern int _gd_stacks[15*128];	// vector de pilas de los procesos de usuario
 
-extern char _gd_sem[8];				// vector de semaforos
 
 extern int _gm_primeraPosMem;	// contindr� la primera posici� de mem�ria lliure
 
 
 //------------------------------------------------------------------------------
-//	Rutinas de gesti�n de procesos (garlic_itcm_proc.s)
+//	Rutinas de gestión de procesos (garlic_itcm_proc.s)
 //------------------------------------------------------------------------------
 
-/* intFunc:		nuevo tipo de dato para representar puntero a funci�n que
-				devuelve un int, concretamente, el puntero a la funci�n de
+/* intFunc:		nuevo tipo de dato para representar puntero a función que
+				devuelve un int, concretamente, el puntero a la función de
 				inicio de los procesos cargados en memoria */
 typedef int (* intFunc)(int);
 
@@ -99,63 +97,33 @@ extern void _gp_IntrMain();
 extern void _gp_rsiVBL();
 
 
-/* _gp_numProc:	devuelve el n�mero de procesos cargados en el sistema,
+/* _gp_numProc:	devuelve el número de procesos cargados en el sistema,
 				incluyendo el proceso en RUN y los procesos en READY; */
 extern int _gp_numProc();
 
 
 /* _gp_crearProc:	prepara un proceso para ser ejecutado, creando su entorno
-				de ejecuci�n y coloc�ndolo en la cola de READY;
-	Par�metros:
-		funcion	->	direcci�n de memoria de entrada al c�digo del proceso
-		zocalo	->	identificador del z�calo (0..15)
-		nombre	->	string de 4 caracteres con el nombre en clave del programa
+				de ejecución y colocándolo en la cola de READY;
+	Parámetros:
+		funcion	->	dirección de memoria de entrada al código del proceso
+		zocalo	->	identificador del zócalo (0..15)
+		nombre	->	string de 4 carácteres con el nombre en clave del programa
 		arg		->	argumento del programa (0..3)
 	Resultado:	0 si no hay problema, >0 si no se puede crear el proceso
 */
 extern int _gp_crearProc(intFunc funcion, int zocalo, char *nombre, int arg);
 
-/* _gp_retardarProc:	retarda la ejecución del proceso actual durante el
-				número de segundos que se especifica por parámetro,
-				colocándolo en el vector de DELAY;
-	Parámetros:
-		nsec ->	número de segundos (máx. 600); si se especifica 0, el proceso
-				solo se desbanca y el retardo será el tiempo que tarde en ser
-				restaurado (depende del número de procesos activos del sistema)
-	ATENCIÓN:
-				¡el proceso del sistema operativo (PIDz = 0) NO podrá utilizar
-				esta función, para evitar que el procesador se pueda quedar sin
-				procesos a ejecutar!
-*/
-extern int _gp_retardarProc(int nsec);
 
-
-/* _gp_matarProc:	elimina un proceso de las colas de READY o DELAY, según
-				donde se encuentre, libera memoria y borra el PID de la
-				estructura _gd_pcbs[zocalo] correspondiente al zócalo que se
-				pasa por parámetro;
-	ATENCIÓN:	Esta función solo la llamará el sistema operativo, por lo tanto,
-				no será necesario realizar comprobaciones del parámetro; por
-				otro lado, el proceso del sistema operativo (zocalo = 0) ¡NO se
-				tendrá que destruir a sí mismo!
-*/
-extern int _gp_matarProc(int zocalo);
-
-
-
-/* _gp_rsiTIMER0:	servicio de interrupciones del TIMER0 de la plataforma NDS,
-				que refrescará periódicamente la información de la tabla de
-				procesos relativa al tanto por ciento de uso de la CPU; */
-extern void _gp_rsiTIMER0();
 
 //------------------------------------------------------------------------------
-//	Funciones de gesti�n de memoria (garlic_mem.c)
+//	Funciones de gestión de memoria (garlic_mem.c)
 //------------------------------------------------------------------------------
 
 /* _gm_initFS: inicializa el sistema de ficheros, devolviendo un valor booleano
-					para indiciar si dicha inicializaci�n ha tenido �xito;
+					para indiciar si dicha inicialización ha tenido éxito;
 */
 extern int _gm_initFS();
+
 
 /* _gm_listaProgs: devuelve una lista con los nombres en clave de todos
 				los programas que se encuentran en el directorio "Programas".
@@ -166,6 +134,7 @@ extern int _gm_initFS();
 				el resultado es un vector de strings (paso por referencia) y
 				el número de programas detectados; */
 extern int _gm_listaProgs(char* progs[]);
+
 
 /* _gm_cargarPrograma: busca un fichero de nombre "(keyName).elf" dentro del
 					directorio "/Programas/" del sistema de ficheros y carga
@@ -184,7 +153,7 @@ extern intFunc _gm_cargarPrograma(int zocalo, char *keyName);
 
 
 //------------------------------------------------------------------------------
-//	Rutinas de soporte a la gesti�n de memoria (garlic_itcm_mem.s)
+//	Rutinas de soporte a la gestión de memoria (garlic_itcm_mem.s)
 //------------------------------------------------------------------------------
 
 /* _gm_reubicar: rutina de soporte a _gm_cargarPrograma(), que interpreta los
@@ -222,17 +191,17 @@ extern void _gm_liberarMem(int z);
 extern void _gm_rsiTIMER1();
 
 
+
 //------------------------------------------------------------------------------
-//	Funciones de gesti�n de gr�ficos (garlic_graf.c)
+//	Funciones de gestión de gráficos (garlic_graf.c)
 //------------------------------------------------------------------------------
 
-/* _gg_iniGraf: inicializa el procesador gr�fico A para GARLIC 1.0 */
+/* _gg_iniGraf: inicializa el procesador gráfico A para GARLIC 2.0 */
 extern void _gg_iniGrafA();
 
 
-/* _gg_generarMarco: dibuja el marco de la ventana que se indica por parámetro,
-												con el color correspondiente; */
-extern void _gg_generarMarco(int v, int color);
+/* _gg_generarMarco: dibuja el marco de la ventana que se indica por parámetro*/
+extern void _gg_generarMarco(int v);
 
 
 /* _gg_escribir: escribe una cadena de carácteres en la ventana indicada;
@@ -241,8 +210,7 @@ extern void _gg_generarMarco(int v, int color);
 					admite '\n' (salto de línea), '\t' (tabulador, 4 espacios)
 					y códigos entre 32 y 159 (los 32 últimos son carácteres
 					gráficos), además de marcas de formato %c, %d, %h y %s (máx.
-					2 marcas por string) y de las marcas de cambio de color 
-					actual %0 (blanco), %1 (amarillo), %2 (verde) y %3 (rojo);
+					2 marcas por string) 
 		val1	->	valor a sustituir en la primera marca de formato, si existe
 		val2	->	valor a sustituir en la segunda marca de formato, si existe
 					- los valores pueden ser un código ASCII (%c), un valor
@@ -254,67 +222,23 @@ extern void _gg_escribir(char *formato, unsigned int val1, unsigned int val2,
 
 
 //------------------------------------------------------------------------------
-//	Rutinas de soporte a la gesti�n de gr�ficos (garlic_itcm_graf.s)
+//	Rutinas de soporte a la gestión de gráficos (garlic_itcm_graf.s)
 //------------------------------------------------------------------------------
 
 /* _gg_escribirLinea: rutina de soporte a _gg_escribir(), para escribir sobre la
-					fila (f) de la ventana (v) los caracters pendientes (n) del
-					buffer de ventana correspondiente.
+					fila (f) de la ventana (v) los carácteres pendientes (n) del
+					buffer de ventana correspondiente;
 */
 extern void _gg_escribirLinea(int v, int f, int n);
 
 
-/* _gg_desplazar: rutina de soporte a _gg_escribir(), para desplazar una posici�n
+/* desplazar: rutina de soporte a _gg_escribir(), para desplazar una posición
 					hacia arriba todas las filas de la ventana (v) y borrar el
-					contenido de la �ltima fila.
+					contenido de la última fila;
 */
 extern void _gg_desplazar(int v);
 
-/* _gg_escribirCar: escribe un carácter (baldosa) en la posición de la ventana
-				indicada, con un color concreto;
-	Parámetros:
-		vx		->	coordenada x de ventana (0..31)
-		vy		->	coordenada y de ventana (0..23)
-		c		->	código del carácter, como número de baldosa (0..127)
-		color	->	color del texto (0..3)
-		ventana	->	número de ventana (0..15)
-*/
-extern void _gg_escribirCar(int vx, int vy, char c, int color, int ventana);
 
-
-/* _gg_escribirMat: escribe una matriz de 8x8 carácteres a partir de una
-				posición de la ventana indicada, con un color concreto;
-	Parámetros:
-		vx		->	coordenada x inicial de ventana (0..31)
-		vy		->	coordenada y inicial de ventana (0..23)
-		m		->	matriz 8x8 de códigos ASCII
-		color	->	color del texto (0..3)
-		ventana	->	número de ventana (0..15)
-*/
-extern void _gg_escribirMat(int vx, int vy, char m[][8], int color, int ventana);
-
-
-/* _gg_escribirLineaTabla: escribe los campos básicos de una línea de la tabla
-				de procesos, correspondiente al número de zócalo que se pasa por
-				parámetro con el color especificado; los campos a escribir son:
-					número de zócalo, PID y nombre clave del proceso (keyName);
-*/
-extern void _gg_escribirLineaTabla(int z, int color);
-
-
-/* _gg_rsiTIMER2:	servicio de interrupciones del TIMER2 de la plataforma NDS,
-				que refrescará periódicamente la información de la tabla de
-				procesos relativa a la dirección actual de ejecución; */
-extern void _gg_rsiTIMER2();
-
-
- /* _gg_setChar: Defineix un nou caracter grafic a partir del codi 128
-	Par�metros:
-		n	->	numero de caracter, entre 128 i 255
-		buffer	->	punter a una matriu de 8x8 bytes (emmagatzemada per files)
-					on cada byte indica l'index de color d'un pixel.
-*/
-extern void _gg_setChar(unsigned char n, unsigned char *buffer);
 
 //------------------------------------------------------------------------------
 //	Rutinas de soporte al sistema (garlic_itcm_sys.s)
@@ -351,13 +275,6 @@ extern int _gs_num2str_hex(char * numstr, unsigned int length, unsigned int num)
 /* _gs_copiaMem: copia un bloque de numBytes bytes, desde una posición de
 				memoria inicial (*source) a partir de otra posición de memoria
 				destino (*dest), asumiendo que ambas posiciones de memoria están
-				alineadas a word */
-extern void _gs_copiaMem(const void *source, void *dest, unsigned int numBytes);
-
-
-/* _gs_copiaMem: copia un bloque de numBytes bytes, desde una posici�n de
-				memoria inicial (*source) a partir de otra posici�n de memoria
-				destino (*dest), asumiendo que ambas posiciones de memoria est�n
 				alineadas a word */
 extern void _gs_copiaMem(const void *source, void *dest, unsigned int numBytes);
 
@@ -406,34 +323,6 @@ extern void _gs_pintarFranjas(unsigned char zocalo, unsigned short index_ini,
 				control de procesos.
 */
 extern void _gs_representarPilas();
-
-
-//------------------------------------------------------------------------------
-//	Rutinas de soporte a la interficie de usuario (garlic_itcm_ui.s)
-//------------------------------------------------------------------------------
-extern int _gi_za;				// zócalo seleccionado actualmente
-
-
-/* _gi_movimientoVentanas:	actualiza el desplazamiento y escalado de los
-				fondos 2 y 3 del procesador gráfico A, para efectuar los
-				movimientos de las ventanas según el comportamiento
-				requerido de la interficie de usuario; */
-extern void _gi_movimientoVentanas();
-
-
-/* _gi_redibujarZocalo: rutina para actualizar la tabla de zócalos en función
-				del zócalo actual (_gi_za) y del parámetro (seleccionar):
-					si seleccionar == 0, dibuja la línea de _gi_za según el
-											color asociado al estado del zócalo
-											(blanco -> activo, salmón -> libre);
-					sino, 				dibuja la línea en magenta;
-*/
-extern void _gi_redibujarZocalo(int seleccionar);
-
-
-/* _gi_controlInterfaz: rutina para gestionar la interfaz del usuario a partir
-				del código de tecla que se pasa por parámetro; */
-extern void _gi_controlInterfaz(int key);
 
 
 #endif // _GARLIC_SYSTEM_h
