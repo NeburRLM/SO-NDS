@@ -361,13 +361,6 @@ extern int _gs_num2str_hex(char * numstr, unsigned int length, unsigned int num)
 extern void _gs_copiaMem(const void *source, void *dest, unsigned int numBytes);
 
 
-/* _gs_copiaMem: copia un bloque de numBytes bytes, desde una posici�n de
-				memoria inicial (*source) a partir de otra posici�n de memoria
-				destino (*dest), asumiendo que ambas posiciones de memoria est�n
-				alineadas a word */
-extern void _gs_copiaMem(const void *source, void *dest, unsigned int numBytes);
-
-
 /* _gs_borrarVentana: borra el contenido de la ventana que se pasa por parámetro,
 				así como el campo de control del buffer de ventana
 				_gd_wbfs[ventana].pControl; la rutina puede operar en una
