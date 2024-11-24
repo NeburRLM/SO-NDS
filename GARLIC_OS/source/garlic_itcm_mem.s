@@ -42,7 +42,7 @@ _gm_reubicar:
 	push {r0-r12,lr}
 
 	ldr  r6, [SP, #56]												@; R6 -> carreguem el cinquè paràmetre a partir de la suma 56 (4bytes per registre * 14registres pila)
-	mov r12, r3
+	mov r12, r3		
 	ldr r3, [r0, #32]												@; R3 -> carreguem el valor del desplaçament de la taula de seccions a partir del buffer (e_shoff)
 	add r3, #4														@; R3 -> incrementem a 4 r3 per situar-nos al tipus de seccio
 	ldrh r4, [r0, #48]												@; R4 -> carreguem el número d'entrades de la taula de seccions a partir del buffer (e_shnum)

@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
 
 #include "garlic_system.h"	// definición de funciones y variables de sistema
 #include <elf.h> 
@@ -34,7 +35,41 @@ int _gm_initFS()
 			el número de programas detectados */
 int _gm_listaProgs(char* progs[])
 {
-	return 0;
+	//Inicialitzacions de variable de retorn i contador
+	int ret=0;	//guardarà el valor de retorn de la funció
+	int i = 0;	//guardarà el contador per guardar cada programa llegit
+    struct dirent *entrada;	//guardarà el nom i el tipus de l'arxiu
+	
+	// Obre el directori "Programas/"
+	DIR *directori = opendir("Programas/");
+	
+	// Verifica si el directori s'ha obert correctament
+	if (directori != NULL) 
+	{
+		// Bucle per recórrer les entrades del directori a partir del punter directori
+		while ((entrada = readdir(directori)) != NULL) 
+		{
+			// Filtra per longitud del nom i tipus d'entrada (arxiu regular)
+			if (entrada->d_type == DT_REG && strlen(entrada->d_name) == 8 && strstr(entrada->d_name, ".elf") != NULL) 
+			{
+				// Assigna memòria per emmagatzemar el nom en clau (4 caràcters + terminador nul)
+				char *buffer = malloc(5);
+				// Copia els primers 4 caràcters del nom de l'entrada al buffer
+				strncpy(buffer, entrada->d_name, 4);
+				// Agrega el terminador nul al final del buffer
+				buffer[4] = '\0';
+				// Emmagatzema el buffer al vector progs
+				progs[i] = buffer;
+				// Incrementa el contador de programes
+				i++;
+			}
+		}
+		ret = i;	// Assigna el valor de i al resultat de la funció
+	}
+	//Tanca el stream del directori
+    closedir(directori);
+	//Retorna el número total de programes trobats
+	return ret;
 }
 
 
