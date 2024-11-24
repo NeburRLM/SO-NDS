@@ -41,6 +41,8 @@ INI_MEM_PROC = 0x01002000
 _gm_reubicar:
 	push {r0-r12,lr}
 
+	ldr  r6, [SP, #56]												@; R6 -> carreguem el cinquè paràmetre a partir de la suma 56 (4bytes per registre * 14registres pila)
+	mov r12, r3
 	ldr r3, [r0, #32]												@; R3 -> carreguem el valor del desplaçament de la taula de seccions a partir del buffer (e_shoff)
 	add r3, #4														@; R3 -> incrementem a 4 r3 per situar-nos al tipus de seccio
 	ldrh r4, [r0, #48]												@; R4 -> carreguem el número d'entrades de la taula de seccions a partir del buffer (e_shnum)
@@ -89,9 +91,21 @@ _gm_reubicar:
 	add r9, r2														@; suma el valor del offset del reubicador amb la @ de destí en memoria
 	sub r9, r1														@; resta la @ d'inici del segment per obtenir la @ absoluta de reubicació en memoria
 	ldr r11, [r9]													@; obtenim el contingut de la @ absoluta
+	cmp r12, #0xFFFFFFFF
+	beq .LReubicar_segment_codi
+	cmp r11, r12
+	bge .LReubicar_segment_dades
+
+.LReubicar_segment_codi:		
 	add r11, r2														@; obtenim la @ aboluta de destí en la memoria, sumant el valor de la @ absoluta de reubicació amb la @ de destí en memoria
 	sub r11, r1														@; ajustem la @ absoluta de destí restant la @ d'inici del segment
 	str r11, [r9]													@; guardem la @ de reubicació en la memoria
+	b .LContinua_recorregut_reubicadors
+
+.LReubicar_segment_dades:
+	add r11, r6
+	sub r11, r12
+	str r11, [r9]
 	b .LContinua_recorregut_reubicadors
 
 .LFi_seccio:	
