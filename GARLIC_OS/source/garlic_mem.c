@@ -38,7 +38,7 @@ int _gm_listaProgs(char* progs[])
 	//Inicialitzacions de variable de retorn i contador
 	int ret=0;	//guardarà el valor de retorn de la funció
 	int i = 0;	//guardarà el contador per guardar cada programa llegit
-    struct dirent *entrada;	//guardarà el nom i el tipus de l'arxiu
+	struct dirent *entrada;	//guardarà el nom i el tipus de l'arxiu
 	
 	// Obre el directori "Programas/"
 	DIR *directori = opendir("Programas/");
@@ -67,7 +67,7 @@ int _gm_listaProgs(char* progs[])
 		ret = i;	// Assigna el valor de i al resultat de la funció
 	}
 	//Tanca el stream del directori
-    closedir(directori);
+	closedir(directori);
 	//Retorna el número total de programes trobats
 	return ret;
 }
@@ -89,22 +89,22 @@ Elf32_Word ferMultiple(Elf32_Word tSeg)
 
 FILE* _gm_fopen(const char* filename, const char* mode)
 {
-    char path[22]; //"Datos/filename"
-    sprintf(path, "/Datos/%s", filename); 
-    
+	char path[22]; //"Datos/filename"
+	sprintf(path, "/Datos/%s", filename); 
+	
 	return fopen(path, mode); 
 }
 
 
 size_t _gm_fread(void * buffer, size_t size, size_t numele, FILE * file)
 {
-    return fread(buffer, size, numele, file); 
+	return fread(buffer, size, numele, file); 
 }
 
 
 int _gm_fclose(FILE * file)
 {
-    return fclose(file);  
+	return fclose(file);  
 }
 
 
@@ -125,61 +125,62 @@ int _gm_fclose(FILE * file)
 intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 {
 
-	char pathFit[20];														//per guardar el keyName rebut per paràmetre
-	FILE *fitxer;															//per gestionar el fitxer .elf a obrir
-	Elf32_Ehdr capcaleraElf;												//per emmagatzemar l'estructura correcta de la capçalera del .elf
-	Elf32_Phdr taulaSeg;													//per emmagatzemar l'estructura correcta de la taula de segments
-	long tamany;															//per guardar el nombre d'elements que conté el fitxer .elf
-	char *buffer;															//per emmagatzemar el contingut del fitxer .elf en memòria dinámica com una seqüència de caràcters
-	unsigned int offset;													//offset de la taula de segments
-	unsigned int offsetSegCodi;												//offset segment codi
-	unsigned int offsetSegDades;											//offset segment dades
-	unsigned short entry;													//primera instruccio a executar del programa
-	unsigned short phentsize;												//tamany de cada entrada de la taula de segments
-	unsigned short phnum;													//número d'entrades de la taula de segments							
-	unsigned int tamanySegCodi; 											//per emmagatzemar el tamany memSize del segment de codi
-	unsigned int tamanySegDades;											//per emmagatzemar el tamany memSize del segment de dades
-	unsigned int paddrSegCodi;												//direcció física segment codi
-	unsigned int paddrSegDades;												//direcció física segment dades
-	unsigned int primerDirCodi = 0; 										//guardarà la primera direcció de l'espai reservat del segment de codi
-	unsigned int primerDirDades = 0; 										//guardarà la primera direcció de l'espai reservat del segment de dades
-	int i;																	//bucle per recòrrer els segments	
-	intFunc adrProg = 0;													//variable aux per guardar l'adressa del programa actual
+	char pathFit[20];																//per guardar el keyName rebut per paràmetre
+	FILE *fitxer;																	//per gestionar el fitxer .elf a obrir
+	Elf32_Ehdr capcaleraElf;														//per emmagatzemar l'estructura correcta de la capçalera del .elf
+	Elf32_Phdr taulaSeg;															//per emmagatzemar l'estructura correcta de la taula de segments
+	long tamany;																	//per guardar el nombre d'elements que conté el fitxer .elf
+	char *buffer;																	//per emmagatzemar el contingut del fitxer .elf en memòria dinámica com una seqüència de caràcters
+	unsigned int offset;															//offset de la taula de segments
+	unsigned int offsetSegCodi;														//offset segment codi
+	unsigned int offsetSegDades;													//offset segment dades
+	unsigned short entry;															//primera instruccio a executar del programa
+	unsigned short phnum;															//número d'entrades de la taula de segments							
+	unsigned int tamanySegCodi; 													//per emmagatzemar el tamany memSize del segment de codi
+	unsigned int tamanySegDades;													//per emmagatzemar el tamany memSize del segment de dades
+	unsigned int tamanyFileCodi;													//per emmagatzemar el tamany p_filesz del fitxer de codi
+	unsigned int tamanyFileDades;													//per emmagatzemar el tamany p_filesz del fitxer de dades
+	unsigned int paddrSegCodi;														//direcció física segment codi
+	unsigned int paddrSegDades;														//direcció física segment dades
+	unsigned int primerDirCodi = 0; 												//guardarà la primera direcció de l'espai reservat del segment de codi
+	unsigned int primerDirDades = 0; 												//guardarà la primera direcció de l'espai reservat del segment de dades
+	int i;																			//bucle per recòrrer els segments	
+	intFunc adrProg = 0;															//variable aux per guardar l'adressa del programa actual
 
-    
-    //buscar el fitxer
-	sprintf(pathFit, "/Programas/%s.elf", keyName);							//guardem el path del "fitxer.elf" en una cadena de caràcters
-	fitxer = fopen(pathFit, "rb"); 											//obrim el fitxer anterior en mode lectura binaria
+	
+	//buscar el fitxer
+	sprintf(pathFit, "/Programas/%s.elf", keyName);									//guardem el path del "fitxer.elf" en una cadena de caràcters
+	fitxer = fopen(pathFit, "rb"); 													//obrim el fitxer anterior en mode lectura binaria
 		
 	//si fitxer no trobat en programas del nitrofiles retornem 0, sinò passem a carregar-ho a memòria
 	if (fitxer != NULL)					
 	{
 		//si fitxer trobat, calculem el tamany (quantitat d'elements) per saber el que es necessita per reservar-ho en memòria dinàmica
-		fseek(fitxer, 0, SEEK_END);											//moure el punter del fitxer al final 
-		tamany = ftell(fitxer);												//obtenir la posició actual del punter (que equivaldrà al tamany del fitxer=num d'elements)
-		fseek(fitxer, 0, SEEK_SET);											//situem el punter al principi del fitxer per fer gestions posteriors
+		fseek(fitxer, 0, SEEK_END);													//moure el punter del fitxer al final 
+		tamany = ftell(fitxer);														//obtenir la posició actual del punter (que equivaldrà al tamany del fitxer=num d'elements)
+		fseek(fitxer, 0, SEEK_SET);													//situem el punter al principi del fitxer per fer gestions posteriors
 			
 		//cargar el fitxer íntegrament dins d'un buffer de memòria dinàmica per un accés al seu contingut més eficient 
-		buffer = (char*) malloc(tamany);									//assignem dinàmicament memòria en el heap pel buffer de caràcters en funció del tamany del fitxer 	
-		fread(buffer, sizeof(char), tamany, fitxer); 						//guardem el contingut del fitxer al buffer 								
-		fclose(fitxer);														//tanquem fitxer
-		memcpy(&capcaleraElf, buffer, sizeof(Elf32_Ehdr));					//capçalera .elf
+		buffer = (char*) malloc(tamany);											//assignem dinàmicament memòria en el heap pel buffer de caràcters en funció del tamany del fitxer 	
+		fread(buffer, sizeof(char), tamany, fitxer); 								//guardem el contingut del fitxer al buffer 								
+		fclose(fitxer);																//tanquem fitxer
+		memcpy(&capcaleraElf, buffer, sizeof(Elf32_Ehdr));							//capçalera .elf
 			
-		offset = capcaleraElf.e_phoff;										//e_phoff (offset de la taula de segments)
-		entry = capcaleraElf.e_entry;										//e_entry (primera instruccio a executar del programa)								
-		phentsize = capcaleraElf.e_phentsize;								//e_phentsize (tamany de cada entrada de la taula de segments)
-		phnum = capcaleraElf.e_phnum;										//e_phnum (número d'entrades de la taula de segments)
+		offset = capcaleraElf.e_phoff;												//e_phoff (offset de la taula de segments)
+		entry = capcaleraElf.e_entry;												//e_entry (primera instruccio a executar del programa)								
+		phnum = capcaleraElf.e_phnum;												//e_phnum (número d'entrades de la taula de segments)
 			
-		if (phnum != 0)														//si té entrada en la taula de segments
+		if (phnum != 0)																//si té entrada en la taula de segments
 		{
-			memcpy(&taulaSeg, buffer + offset, sizeof(Elf32_Phdr)); 		//llegim la taula de segments del programa en l'estructura establerta pels segments			
-			for (i = 0; i < phnum; i++) 									//guardarem cadascun dels segments del programa a cada iteració
+			for (i = 0; i < phnum; i++) 											//guardarem cadascun dels segments del programa a cada iteració
 			{ 										
-				if (taulaSeg.p_type == PT_LOAD) 							//si l'entrada és de tipus PT_LOAD
+				memcpy(&taulaSeg, buffer + offset, sizeof(Elf32_Phdr)); 			//llegim la taula de segments del programa en l'estructura establerta pels segments
+				if (taulaSeg.p_type == PT_LOAD) 									//si l'entrada és de tipus PT_LOAD
 				{									
 					if (taulaSeg.p_flags == (PF_R | PF_X)) 							//si els flags del segment són lectura i executable (segment codi)
 					{
 						tamanySegCodi = taulaSeg.p_memsz;							//obtenim la informació del tamany del segment de codi del programa actual (capcaleraElf)
+						tamanyFileCodi = taulaSeg.p_filesz;							//obtenim la informació del tamany del fitxer del segment de codi del programa actual (capcaleraElf)
 						offsetSegCodi = taulaSeg.p_offset;							//obtenim la informació del offset del segment de codi del programa actual (capcaleraElf)
 						paddrSegCodi = taulaSeg.p_paddr;							//obtenim la informació de la direcció física del segment de codi del programa actual (capcaleraElf)
 						if (_gm_primeraPosMem + tamanySegCodi <= END_MEM) 			//verifiquem si la posición de memòria _gm_primeraPosMem no supera la direcció final de memòria
@@ -190,12 +191,12 @@ intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 							if (primerDirCodi != 0) 
 							{
 								//copia el contingut del segment de programa des del buffer en la dirección de memòria _gm_primeraPosMem (_gs_copiaMem(const void *source, void *dest, unsigned int numBytes))
-								_gs_copiaMem((const void *) buffer + taulaSeg.p_offset, (void *) _gm_primeraPosMem, tamanyFile);
+								_gs_copiaMem((const void *) buffer + offsetSegCodi, (void *)primerDirCodi, tamanyFileCodi);
 								//si només té una entrada en la taula de segments
 								if (phnum == 1) 
 								{
 									//aplica reubicancions per ajustar referències amb respecte al segment de codi en funció de taulaSeg.p_paddr
-									_gm_reubicar(buffer, paddrSegCodi, (unsigned int *)primerDirCodi, 0 , (unsigned int *)0);
+									_gm_reubicar(buffer, paddrSegCodi, (unsigned int *)primerDirCodi, 0, (unsigned int *)0);
 								}
 								//direcció d'inici del programa a la memòria física, tenint en compte totes les reubicacions necessàries perquè el programa s'executi correctament des de la posició en memòria on s'ha carregat
 								adrProg = (intFunc) (_gm_primeraPosMem + entry - paddrSegCodi);				
@@ -203,18 +204,37 @@ intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 								_gm_liberarMem(zocalo);								//si no s'ha pogut reservar la memòria requerida, alliberem a partir del zocalo
 							}								
 						}
+					}
+					else if ((taulaSeg.p_flags == (PF_R | PF_W)) && primerDirCodi != 0) //si els flags del segment són lectura i escriptura (segment dades) i s'ha reservat correctament memòria al segment de codi
+					{
+						tamanySegDades = taulaSeg.p_memsz;							//obtenim la informació del tamany del segment de dades del programa actual (capcaleraElf)
+						tamanyFileDades = taulaSeg.p_filesz;						//obtenim la informació del tamany del fitxer del segment de dades del programa actual (capcaleraElf)
+						offsetSegDades = taulaSeg.p_offset;							//obtenim la informació del offset del segment de dades del programa actual (capcaleraElf)
+						paddrSegDades = taulaSeg.p_paddr;							//obtenim la informació de la direcció física del segment de dades del programa actual (capcaleraElf)
+						if (_gm_primeraPosMem + tamanySegDades <= END_MEM) 			//verifiquem si la posición de memòria _gm_primeraPosMem no supera la direcció final
+						{			
+							//reserva memoria, retorna la primera direcció de l'espai reservat per al segment de dades
+							primerDirDades = (int)_gm_reservarMem(zocalo, tamanySegDades, (unsigned char) i);
+							//en el cas de que quedi un espai de memòria consecutiu del tamany requerit
+							if (primerDirDades != 0) 
+							{
+								//copia el contingut del segment de programa des del buffer en la dirección de memòria primerDirDades (_gs_copiaMem(const void *source, void *dest, unsigned int numBytes))
+								_gs_copiaMem((const void *)buffer + offsetSegDades, (void *)primerDirDades, tamanyFileDades);
+								//aplica reubicancions per ajustar referències
+								_gm_reubicar(buffer, paddrSegCodi, (unsigned int *)primerDirCodi, paddrSegDades, (unsigned int *)primerDirDades);
+							} 
+							else 
+							{
+								_gm_liberarMem(zocalo);								//si no s'ha pogut reservar la memòria requerida, alliberem a partir del zocalo
+							}
+						}	
+					}														
 				}
-				else if ((taulaSeg.p_flags == (PF_R | PF_W)) && primerDirCodi != 0) //si els flags del segment són lectura i escriptura (segment dades) i s'ha reservat correctament memòria al segment de codi
-				{
-					
-				
-				}														
+				offset = offset + capcaleraElf.e_phentsize;							//actualitzem offset per a que apunti al següent segment del .elf a partir del tamany de cada entrada
 			}
 		}
-		
-		free(buffer);														//netejem buffer
-	}
-    																
+		free(buffer);																//netejem buffer
+	}																
 	return ((intFunc) adrProg);
 }
 
