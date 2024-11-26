@@ -42,7 +42,7 @@ _gm_reubicar:
 	push {r0-r12,lr}
 
 	ldr  r6, [SP, #56]												@; R6 -> carreguem el cinquè paràmetre a partir de la suma 56 (4bytes per registre * 14registres pila)
-	mov r12, r3		
+	mov r12, r3														@; R12 -> guardem el valor de r3 passat per paràmetre a r12 per tal de mantenir el codi de la fase1
 	ldr r3, [r0, #32]												@; R3 -> carreguem el valor del desplaçament de la taula de seccions a partir del buffer (e_shoff)
 	add r3, #4														@; R3 -> incrementem a 4 r3 per situar-nos al tipus de seccio
 	ldrh r4, [r0, #48]												@; R4 -> carreguem el número d'entrades de la taula de seccions a partir del buffer (e_shnum)
@@ -59,18 +59,18 @@ _gm_reubicar:
 	add r3, #12														@; accedim a la @ de sh_offset
 	ldr r5, [r0, r3]												@; carreguem el valor de sh_offset (estructura reubicadors)
 	add r3, #4														@; sumem 4 per accedir a la @ de sh_size (tamany de la secció dins del fitxer)
-	@; s'emmagatzemen els registres r0 a r3 en la pila per preservar l'estat dels registres abans de realitzar la divisó per calcular el número de reubicadors
-	push {r0-r3}
+	@; s'emmagatzemen els registres r0 a r3 i r6 en la pila per preservar l'estat dels registres abans de realitzar la divisó per calcular el número de reubicadors
+	push {r0-r3, r6}
 	mov r6, r0														@; canviem el registre r0 per r6 per guardar el apuntador al buffer del fitxer .elf
 	ldr r0, [r6, r3]												@; del buffer, obtenim el valor de sh_size
 	add r3, #16														@; sumem 16 per accedir a la @ de sh_entsize, que ens indica el que ocupa en bytes cada reubicador
 	ldr r1, [r6, r3]												@; del buffer obtenim el valor de sh_entsize
-	ldr r2, =quo													@; carrguem la @ de memoria del quocient en el registre r2
-	ldr r3, =mod													@; carrguem la @ de memoria del modul/residu en el registre r3
+	ldr r2, =quo													@; carreguem la @ de memoria del quocient en el registre r2
+	ldr r3, =mod													@; carreguem la @ de memoria del modul/residu en el registre r3
 	bl _ga_divmod													@; cridem a la rutina _ga_divmod per calcular el número de reubicadors, dividint el sh_size (el tamany de la secció) entre sh_entsize (el que ocupa cada reubicador) 
 	ldr r7, [r2]													@; carreguem el resultat del quocient en r7
 	ldr r8, [r3]													@; carreguem el resultat del modul/residu en r8
-	pop {r0-r3}														@; restaurem els registres r0 a r3 desde la pila, d'aquesta manera podem seguir utilitzant aquests registres amb els valors inicials passats per paràmetre en aquesta rutina
+	pop {r0-r3, r6}													@; restaurem els registres r0 a r3 i r6 desde la pila, d'aquesta manera podem seguir utilitzant aquests registres amb els valors inicials passats per paràmetre en aquesta rutina
 	
 	add r3, #16 													@; tornem a fer la suma de r3 per tal no perdre la @ de memoria a la que apuntava r3 entre el push i el pop
 	cmp r7, #0														@; comprovem si la divisió s'ha realitzat correctament
@@ -91,22 +91,22 @@ _gm_reubicar:
 	add r9, r2														@; suma el valor del offset del reubicador amb la @ de destí en memoria
 	sub r9, r1														@; resta la @ d'inici del segment per obtenir la @ absoluta de reubicació en memoria
 	ldr r11, [r9]													@; obtenim el contingut de la @ absoluta
-	cmp r12, #0xFFFFFFFF
-	beq .LReubicar_segment_codi
-	cmp r11, r12
-	bge .LReubicar_segment_dades
+	cmp r12, #0														@; comprovem si es tractarà el segment de codi a partir de r12 (valor passat pel tercer paràmetre)
+	beq .LReubicar_segment_codi										@; si és així, tractem el segment de codi
+	cmp r11, r12													@; sinò, comprovem que és cumpleixi que la seva @ de memòria sigui superior que la @ del segment de codi
+	bge .LReubicar_segment_dades									@; si es compleix, tractarem el segment de dades
 
 .LReubicar_segment_codi:		
-	add r11, r2														@; obtenim la @ aboluta de destí en la memoria, sumant el valor de la @ absoluta de reubicació amb la @ de destí en memoria
+	add r11, r2														@; obtenim la @ aboluta de destí del segment de codi en la memoria, sumant el valor de la @ absoluta de reubicació amb la @ de destí en memoria
 	sub r11, r1														@; ajustem la @ absoluta de destí restant la @ d'inici del segment
 	str r11, [r9]													@; guardem la @ de reubicació en la memoria
-	b .LContinua_recorregut_reubicadors
+	b .LContinua_recorregut_reubicadors								@; continuem amb el recorregut dels reubicadors
 
 .LReubicar_segment_dades:
-	add r11, r6
-	sub r11, r12
-	str r11, [r9]
-	b .LContinua_recorregut_reubicadors
+	add r11, r6														@; obtenim la @ aboluta de destí del segment de dades en la memoria, sumant el valor de la @ absoluta de reubicació amb la @ de destí en memoria 
+	sub r11, r12													@; ajustem la @ absoluta de destí restant la @ d'inici del segment
+	str r11, [r9]													@; guardem la @ de reubicació en la memoria
+	b .LContinua_recorregut_reubicadors								@; continuem amb el recorregut dels reubicadors
 
 .LFi_seccio:	
 	sub r4, #1														@; decrementem el número d'entrades de la taula de seccions per continuar amb la següent 

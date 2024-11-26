@@ -41,9 +41,3 @@ typedef struct {
 	Elf32_Word p_flags;
 	Elf32_Word p_align;
 } Elf32_Phdr;
-
-
-//flags definits per saber el tipus de segment
-#define PF_R		0x4
-#define PF_W		0x2
-#define PF_X		0x1

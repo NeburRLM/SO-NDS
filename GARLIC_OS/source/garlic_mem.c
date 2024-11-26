@@ -177,7 +177,7 @@ intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 				memcpy(&taulaSeg, buffer + offset, sizeof(Elf32_Phdr)); 			//llegim la taula de segments del programa en l'estructura establerta pels segments
 				if (taulaSeg.p_type == PT_LOAD) 									//si l'entrada és de tipus PT_LOAD
 				{									
-					if (taulaSeg.p_flags == (PF_R | PF_X)) 							//si els flags del segment són lectura i executable (segment codi)
+					if (taulaSeg.p_flags == 5) 										//si els flags del segment són lectura i executable (segment codi)
 					{
 						tamanySegCodi = taulaSeg.p_memsz;							//obtenim la informació del tamany del segment de codi del programa actual (capcaleraElf)
 						tamanyFileCodi = taulaSeg.p_filesz;							//obtenim la informació del tamany del fitxer del segment de codi del programa actual (capcaleraElf)
@@ -190,7 +190,7 @@ intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 							//en el cas de que quedi un espai de memòria consecutiu del tamany requerit
 							if (primerDirCodi != 0) 
 							{
-								//copia el contingut del segment de programa des del buffer en la dirección de memòria _gm_primeraPosMem (_gs_copiaMem(const void *source, void *dest, unsigned int numBytes))
+								//copia el contingut del segment de programa des del buffer en la direcció de memòria primerDirCodi (_gs_copiaMem(const void *source, void *dest, unsigned int numBytes))
 								_gs_copiaMem((const void *) buffer + offsetSegCodi, (void *)primerDirCodi, tamanyFileCodi);
 								//si només té una entrada en la taula de segments
 								if (phnum == 1) 
@@ -205,7 +205,7 @@ intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 							}								
 						}
 					}
-					else if ((taulaSeg.p_flags == (PF_R | PF_W)) && primerDirCodi != 0) //si els flags del segment són lectura i escriptura (segment dades) i s'ha reservat correctament memòria al segment de codi
+					else if ((taulaSeg.p_flags == 6) && primerDirCodi != 0) 		//si els flags del segment són lectura i escriptura (segment dades) i s'ha reservat correctament memòria al segment de codi
 					{
 						tamanySegDades = taulaSeg.p_memsz;							//obtenim la informació del tamany del segment de dades del programa actual (capcaleraElf)
 						tamanyFileDades = taulaSeg.p_filesz;						//obtenim la informació del tamany del fitxer del segment de dades del programa actual (capcaleraElf)
