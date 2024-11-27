@@ -427,7 +427,7 @@ _gp_crearProc:
 		add r10, #1
 		str r10, [r9]
 		
-		@; inicializamos otrasb variables del pcb (en este caso solo queda workTicks)
+		@; inicializamos otras variables del pcb (en este caso solo queda workTicks)
 		mov r8, #0
 		str r8, [r6, #20]
 		
@@ -475,10 +475,53 @@ _gp_terminarProc:
 	@; Parámetros:
 	@;	R0:	zócalo del proceso a matar (entre 1 y 15).
 _gp_matarProc:
-	push {lr}
-
-
-	pop {pc}
+	push {r1-r10, lr}
+	ldr r1, =_gd_pcbs		@; cargamos la dirección del vector de pcbs
+	mov r2, #24
+	mla r3, r2, r0, r1		@; calculamos el desplazamiento
+	mov r4, #0				
+	str r4, [r1, r3]		@; ponemos el PID a 0
+	
+	ldr r5, =_gd_qReady
+	ldr r6, =_gd_nReady
+	ldr r7, [r6]
+	.LforR:
+		ldrb r8, [r6, r4]
+		cmp r8, r0			@; miramos si coincide el zocalo
+		beq .Ltreure
+		add r4, #1
+		cmp r4, r7
+		blo .LforR			@; seguimos recorriendo la cola
+		mov r4, #0
+		ldr r5, =_gd_qDelay
+		ldr r6, =_gd_nDelay
+		ldr r7, [r6]
+		mov r10, #0
+		
+	.LforD:
+		ldr r8, [r6, r4]
+		@; agafar els 8 bits alts per comprovar si es el num de zocalo
+		cmp r9, r0
+		beq .Ltreure
+		add r4, #4
+		add r10, #1
+		cmp r4, r10
+		blo .LforD
+		b .LfiMP
+	
+	.Ltreure:
+	sub r7, #1 				@; restamos 1 al numero de procesos en cola de Ready
+		.Lmoure:
+			add r4, #1
+			ldr r1, [r5, r4]
+			sub r4, #1
+			str r1, [r5, r4]
+			add r4, #1
+			cmp r7, r4
+			blo .Lmoure
+			
+	.LfiMP:
+	pop {r1-r10, pc}
 	
 .global _gp_retardarProc
 	@; retarda la ejecución de un proceso durante cierto número de segundos,
@@ -496,19 +539,21 @@ _gp_retardarProc:
 	@; pone el bit IME (Interrupt Master Enable) a 0, para inhibir todas
 	@; las IRQs y evitar así posibles problemas debidos al cambio de contexto
 _gp_inhibirIRQs:
-	push {lr}
-
-
-	pop {pc}
+	push {r0-r1, lr}
+	ldr r0, =0x4000208	@; cargamos la dirección del registro IME
+	mov r1, #0
+	str r1, [r0]
+	pop {r0-r1, pc}
 	
 	.global _gp_desinihibirIRQs
 	@; pone el bit IME (Interrupt Master Enable) a 1, para desinhibir todas
 	@; las IRQs
 _gp_desinhibirIRQs:
-	push {lr}
-
-
-	pop {pc}
+	push {r0-r1, lr}
+	ldr r0, =0x4000208
+	mov r1, #1
+	str r1, [r0]
+	pop {r0-r1, pc}
 	
 	.global _gp_rsiTIMER0
 	@; Rutina de Servicio de Interrupción (RSI) para contabilizar los tics
@@ -519,8 +564,64 @@ _gp_desinhibirIRQs:
 	@; columna correspondiente de la tabla de procesos.
 _gp_rsiTIMER0:
 	push {lr}
-
+	ldr r9, =_gd_pcbs
+	mov r10, #24
+	mov r11, #0
+	mov r5, #0
+	.Lsuma:
+		cmp r11, #15
+		movge r11, #0
+		bgt .Lperc			@; comprovamos si hemos visto todas las posiciones del vector de pcbs
+		mla r3, r10, r11, r9	@; calculamos la dirección inicial de cada pcb
+		ldr r4, [r3]		@; accedemos al PID para ver si hay un proceso
+		cmp r4, #0
+		addeq r11, #1		@; si no hay proceso pasamos al siguiente pcb
+		beq .Lsuma
+		ldr r4, [r3, #20]	@; accedemos a los workticks
+		add r5, r4
+		add r11, #1
+		b .Lsuma
 	
+	.Lperc:
+		cmp r11, #15
+		bgt .LfiRSI
+		mla r3, r10, r11, r9
+		ldr r4, [r3]
+		cmp r4, #0
+		addeq r11, #1
+		beq .Lperc
+		ldr r4, [r3, #20]
+		mov r6, r4, lsr r5		@; dividimos los workticks del proceso con los workticks totales
+		mov r7, #100
+		mul r6, r7				@; y multiplicamos por 100 para obtener el porcentage
+		mov r8, #0
+		and r4, r4, r8			@; ponemos a 0 los workticks
+		mov r8, r6
+		mov r8, r8, lsr #8		@; ponemos el porcentage en los 8 bits altos
+		str r8, [r3, #20]		@; guardamos en workticks
+		@; pasar el porcentaje a string
+		ldr r0, =_gd_perc
+		mov r1, #4
+		mov r2, r6
+		bl _gs_num2str_dec
+		@; escribir en la pantalla el porcentage
+		@; en r0 -> string acabado con centinela
+		@; en r1 -> fila
+		@; en r2 -> columna
+		@; en r3 -> color
+		ldr r0, =_gd_perc
+		mov r2, #28
+		mov r3, #0
+		bl _gs_escribirStringSub
+		add r11, #1
+		b .Lperc
+		
+	.LfiRSI:
+		ldr r0, =_gd_sincMain
+		ldr r1, [r0]
+		mov r2, #1
+		orr r3, r1, r2
+		str r3, [r0]
 	pop {pc}
 
 .end

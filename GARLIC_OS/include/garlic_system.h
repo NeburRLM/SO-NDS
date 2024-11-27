@@ -84,6 +84,7 @@ extern char _gd_sem[8];				// vector de semaforos
 
 extern int _gm_primeraPosMem;	// contindr� la primera posici� de mem�ria lliure
 
+extern int _gd_perc;			// contendrá el porcentage en string
 
 //------------------------------------------------------------------------------
 //	Rutinas de gesti�n de procesos (garlic_itcm_proc.s)

@@ -48,4 +48,7 @@ _gd_stacks:	.space 15 * 128 * 4
 	.global _gd_sem				@; Vector de semaforos globales tipo mutex
 _gd_sem: .space 8
 
+.global _gd_perc				@; Variable para guardar el procentage en string
+_gd_perc: .word 0
+
 .end
