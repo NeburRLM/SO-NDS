@@ -69,6 +69,35 @@ _gp_IntrMain:
 	@; se encarga de actualizar los tics, intercambiar procesos, etc.;
 _gp_rsiVBL:
 	push {r4-r7, lr}
+		@; decremento de los tics de los procesos en Delay
+		mov r5, #0
+		.LdecTics:
+			ldr r4, =_gd_nDelay
+			ldr r4, [r4]
+			cmp r4, r5
+			beq .LsaltarD
+			ldr r6, =_gd_qDelay
+			ldr r7, [r6, r5]
+			sub r7, #1				@; restamos 1 tic
+			mov r4, #0xfffffff
+			tst r7, r4
+			beq .LtreuD
+			str r7, [r6, r5]
+			add r5, #1
+			b .LdecTics
+			.LtreuD:
+				mov r7, r7, lsl #8	@; posem el zocalo als 8 bits baixos
+				ldr r4, =_gd_qReady
+				ldr r6, =_gd_nReady
+				ldr r6, [r6]
+				str r7, [r4, r6]	@; guardem el zocalo a la cua de Ready
+				add r6, #1			@; incrementem el numero de procesos a Ready
+				ldr r4, =_gd_nReady
+				str r6, [r4]		@; guardem el nou numero de procesos a Ready
+				@; TODO: falta o moure la resta de procesos de la cua de Delay cap endavant
+			
+		
+		.LsaltarD:
 		@; incremento del contador de tics
 		ldr r4, =_gd_tickCount
 		ldr r5, [r4]
@@ -131,11 +160,20 @@ _gp_rsiVBL:
 	@; R5: nuevo número de procesos en READY (+1)
 _gp_salvarProc:
 	push {r8-r11, lr}
+		@; miramos si el proceso debe ir a la cola de Delay o a la de Ready
+		ldr r8, [r6]
+		mov r8, r8, lsl #1
+		mov r9, #1
+		tst r8, r9
+		moveq r8, r8, lsr #1		@; volvemos a poner el pidz como estaba
+		beq .LsaltarR				@; en el caso de que el bit más alto este en 1 no lo guardamos en la cola de Ready
 		@; guardamos el numero de zocalo en la ultima posición de la cola de ready
 		ldr r8, [r6]				@; sabemos que _gd_pidz => PID + num. zocalo
 		and r8, #0xf				@; num. zocalo
 		ldr r9, =_gd_qReady
 		strb r8, [r9, r5]
+		
+		.LsaltarR:
 		
 		@; guardamos el valor de R15 en el pcb del proceso a desbancar
 		ldr r9, =_gd_pcbs
@@ -529,10 +567,29 @@ _gp_matarProc:
 	@;Parámetros
 	@; R0: int nsec
 _gp_retardarProc:
-	push {lr}
-
-
-	pop {pc}			@; no retornará hasta que se haya agotado el retardo
+	push {r1-r7, lr}
+	mov r1, #60			@; cada 1s se hacen aprox. 60 tics
+	mul r2, r1, r0		@; calculamos el numero de tics segun los segundos
+	mov r3, #0			@; registro donde se construira el word
+	ldr r1, =_gd_pidz
+	ldr r4, [r1]
+	and r4, r4, #0xf	@; cogemos el numero de zocalo del proceso actual
+	orr r3, r3, r4		@; añadimos el num. de zocalo
+	mov r3, r3, lsr #8	@; ponemos el zocalo en los 8 bits altos
+	orr r3, r3, r2		@; añadimos los tics
+	ldr r5, =_gd_qDelay
+	ldr r6, =_gd_nDelay
+	ldr r7, [r6]
+	str r3, [r5, r7]	@; añadimos en la cola el word creado
+	add r7, #1
+	str r7, [r6]		@; incrementamos el numero de procesos en delay
+	mov r4, r4, lsl #1
+	mov r5, #1
+	orr r4, r4, r5
+	mov r4, r4, lsr #1	@; ponemos el bit mas alto a 1
+	str r4, [r1]		@; guardamos el nuevo pidz
+	bl _gp_WaitForVBlank	@; invocamos a la nueva rutina
+	pop {r1-r7, pc}			@; no retornará hasta que se haya agotado el retardo
 
 
 	.global _gp_inihibirIRQs
