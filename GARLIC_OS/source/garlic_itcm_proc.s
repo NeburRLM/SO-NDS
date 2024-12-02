@@ -75,29 +75,16 @@ _gp_rsiVBL:
 			ldr r4, =_gd_nDelay
 			ldr r4, [r4]
 			cmp r4, r5
-			beq .LsaltarD
+			beq .LfiDecTics
 			ldr r6, =_gd_qDelay
 			ldr r7, [r6, r5]
 			sub r7, #1				@; restamos 1 tic
-			mov r4, #0xfffffff
-			tst r7, r4
-			beq .LtreuD
 			str r7, [r6, r5]
 			add r5, #1
 			b .LdecTics
-			.LtreuD:
-				mov r7, r7, lsl #8	@; posem el zocalo als 8 bits baixos
-				ldr r4, =_gd_qReady
-				ldr r6, =_gd_nReady
-				ldr r6, [r6]
-				str r7, [r4, r6]	@; guardem el zocalo a la cua de Ready
-				add r6, #1			@; incrementem el numero de procesos a Ready
-				ldr r4, =_gd_nReady
-				str r6, [r4]		@; guardem el nou numero de procesos a Ready
-				@; TODO: falta o moure la resta de procesos de la cua de Delay cap endavant
-			
+		.LfiDecTics:
+			bl _gp_actualizarDelay
 		
-		.LsaltarD:
 		@; incremento del contador de tics
 		ldr r4, =_gd_tickCount
 		ldr r5, [r4]
@@ -358,8 +345,38 @@ _gp_restaurarProc:
 	@; cola de READY aquellos cuyo número de tics de retardo sea 0
 _gp_actualizarDelay:
 	push {lr}
-
-
+	ldr r0, =_gd_qDelay
+	ldr r1, =_gd_nDelay
+	ldr r2, [r1]
+	ldr r6, =_gd_qReady
+	ldr r7, =_gd_nReady
+	ldr r8, [r7]
+	mov r3, #0				@; desplazamiento
+	mov r5, #0xfffffff		@; mascara para tst
+	.LsegD:
+		cmp r3, r2
+		beq .LfiActD
+		ldr r4, [r0, r3]
+		tst r4, r5
+		bne .LsegD
+		mov r4, r4, lsl #8	@; ponemos el zocalo en los 8 bits bajos
+		str r4, [r6, r8]	@; añadimos el proceso en la cola de Ready
+		add r8, #1
+		.LiniMovD:
+			cmp r3, r2
+			beq .LfiMovD
+			add r3, #1
+			ldr r4, [r0, r3]	@; obtenemos el siguiente proceso de la cola de Delay
+			sub r3, #1
+			str r4, [r0, r3]	@; guardamos en la posicion anterior
+			add r3, #1
+			b .LiniMovD
+		.LfiMovD:
+			sub r2, #1			@; como eliminamos un proceso de la cola de Delay tambien restamos 1 a nDelay
+			b .LsegD			@; miramos el siguiente proceso
+	.LfiActD:
+		str r8, [r7]			@; guardamos las nuevas n de las 2 colas
+		str r2, [r1]
 	pop {pc}
 
 
