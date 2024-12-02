@@ -156,7 +156,7 @@ _ga_setchar:
 	
 	.global _ga_wait
 _ga_wait:
-	push {r1-r3, lr}
+	push {r1-r11, lr}
 	ldr r1, =_gd_sem
 	ldrb r2, [r1, r0]		@; cogemos el valor del semaforo
 	cmp r2, #1				@; si ya esta bloqueado indicamos que no se puede bloquear porque el semaforo ya esta siendo usado por otro proceso
@@ -164,22 +164,61 @@ _ga_wait:
 	
 	mov r3, #0
 	strb r3, [r1, r0]		@; guardamos el valor bloqueado (0)
-	.Lwait_bloq:			@; hacemos encuesta periodica hasta que este a 1 (desbloqueado)
-		ldrb r3, [r1, r0]
-		cmp r3, #1
-		bne .Lwait_bloq
-	mov r0, #1				@; retornamos codigo de desboqueado
+	ldr r4, =_gd_qReady
+	ldr r5, =_gd_nReady
+	ldr r6, [r5]
+	ldr r9, =_gd_pidz
+	ldr r9, [r9]
+	mov r7, #0xf
+	and r9, r9, r7			@; numero de zocalo
+	mov r7, #0
+	.LsacarDeReady:
+		cmp r7, r6
+		beq .LfiSacarDeReady
+		ldr r8, [r4, r7]
+		cmp r8, r9
+		beq .LmovReady
+		add r7, #1
+		b .LsacarDeReady
+	.LmovReady:
+		mov r10, #0
+		mov r11, #0xffffff
+		orr r10, r10, r9		@;añadimos el numero de zocalo
+		mov r10, r10, lsr #8
+		orr r10, r10, r11		@; ponemos los 24 bits restantes a 1
+		ldr r11, =_gd_qDelay
+		str r10, [r11]			@; guardamos el proceso bloqueado en la cola de Delay
+		mov r10, r7
+		.LiniMov:
+			cmp r6, r7
+			beq .LfiIniMov
+			add r7, #1
+			ldr r10, [r4, r7]
+			sub r7, #1
+			str r10, [r4, r7]
+			add r7, #1
+			b .LiniMov
+	.LfiIniMov:
+		sub r6, #1
+		str r6, [r5]			@; restamos un proceso a nReady
+		ldr r10, =_gd_nDelay
+		ldr r11, [r10]
+		add r11, #1
+		str r11, [r10]			@; añadimos un proceso a nDelay
+	
+	.LfiSacarDeReady:
+	mov r0, #1				@; retornamos codigo de bloqueo correcto
 	b .Lwait_fi
 	
 	.Lwait_noBloq:
 		mov r0, #0			@; retornamos codigo de que no puede ser bloqueado por ese semaforo
 	
 	.Lwait_fi:
-	pop {r1-r3, pc}
+	pop {r1-r11, pc}
 
 	.global _ga_signal
 _ga_signal:
-	push {r1-r3, lr}
+	push {r1-r11, lr}
 	ldr r1, =_gd_sem
 	ldrb r2, [r1, r0]		@; cogemos el valor del semaforo
 	cmp r2, #0
@@ -187,6 +226,39 @@ _ga_signal:
 	
 	mov r3, #1
 	strb r3, [r1, r0]		@; si esta bloqueado lo desbloqueamos (+1)
+	@; treure de la cua de Delay i posar en la cua de Ready
+	ldr r4, =_gd_qDelay
+	ldr r5, =_gd_nDelay
+	ldr r6, [r5]
+	mov r7, #0
+	mov r9, #0xf
+	.LbuscD:
+		cmp r6, r7
+		beq .LfiBuscD
+		ldr r8, [r4, r7]
+		mov r8, r8, lsl #8	@; ponemos el zocalo en los 8 bits bajos
+		and r8, r8, r9		@; obtenemos el numero de zocalo
+		cmp r8, r0
+		bne .LbuscD
+		ldr r9, =_gd_qReady
+		ldr r10, =_gd_nReady
+		ldr r11, [r10]
+		str r8, [r9]		@; guardamos el proceso en la cola de Ready
+		add r11, #1
+		str r11, [r10]
+		.LmovD:				@; eliminamos el proceso que ha pasado a Ready y ajustamos la cola de Delay
+			cmp r7, r6
+			beq .LfiMovD
+			add r7, #1
+			ldr r10, [r4, r7]
+			sub r7, #1
+			str r10, [r4, r7]
+			add r7, #1
+			b .LmovD
+		.LfiMovD:
+			sub r6, #1
+			str r6, [r5]	@; restamos un n a Delay
+	.LfiBuscD:
 	mov r0, #1				@; devolvemos codigo de que hemos desbloqueado un semaforo
 	b .Lsig_fi
 	
@@ -194,7 +266,7 @@ _ga_signal:
 		mov r0, #0			@; en caso de que no este bloqueado devolvemos codigo de que no estaba bloqueado
 		
 	.Lsig_fi:
-	pop {r1-r3, pc}
+	pop {r1-r11, pc}
 
 
 	.global _ga_fopen

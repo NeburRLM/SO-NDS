@@ -344,7 +344,8 @@ _gp_restaurarProc:
 	@; Rutina para actualizar la cola de procesos retardados, poniendo en
 	@; cola de READY aquellos cuyo número de tics de retardo sea 0
 _gp_actualizarDelay:
-	push {lr}
+	push {r0-r8, lr}
+	@; TODO: descubrir com canviar el pidz per treure el bit que s'ha posat a 1 perque es pugui salvar el context
 	ldr r0, =_gd_qDelay
 	ldr r1, =_gd_nDelay
 	ldr r2, [r1]
@@ -377,7 +378,7 @@ _gp_actualizarDelay:
 	.LfiActD:
 		str r8, [r7]			@; guardamos las nuevas n de las 2 colas
 		str r2, [r1]
-	pop {pc}
+	pop {r0-r8, pc}
 
 
 	.global _gp_numProc
