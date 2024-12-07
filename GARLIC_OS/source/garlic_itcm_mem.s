@@ -154,10 +154,57 @@ _gm_reubicar:
 	@;Resultado
 	@;	R0: dirección inicial de memoria reservada (0 si no es posible)
 _gm_reservarMem:
-	push {lr}
+	push {r0-r12, lr}
+	
+	@; càlcul de les franjas que necessitem
+	push {r0-r3}
+	mov r0, r1
+	mov r1, #32
+	ldr r2, =quo
+	ldr r3, =res
+	bl _ga_divmod
+	ldr r4, [r2]
+	ldr r5, [r3]
+	pop {r0-r3}
+	
+	mov r6, #0	@; contador bucle franjas
+	mov r7, #0	@; contador franjas seguides
+	ldr r8, =_gm_zocMem
+	ldr r9, =NUM_FRANJAS
+	
+	cmp r5, #0	@; comparem si el residu és = 0
+	beq .LBucle_franjas 	@; si ho és, comencem amb el tractament de les franjas
+	add r4, #1 	@; si no ho és, incrementem una franja de més necessària  
 
+.LBucle_franjas:
+	cmp r6, r9	@; comparem si s'ha acabat amb el recorregut del vector
+	bge .LFi_reservarMem	
+	cmp r7, r4	@; comprovem si ja es poden reservar les franjas necessàries
+	beq .LPossible_reserva
+	ldrb r10, [r8, r6]	
+	cmp r10, #0 			
+	beq .LFranja_lliure 
+	bne .LFranja_ocupada
 
-	pop {pc}
+.LFranja_lliure:
+	add r7, #1
+	cmp r7, #1
+	bne LContinuar_bucle_franjas
+	mov r11, r6	@; guarda l'índex inicial on comença la franja 
+
+.LFranja_ocupada:		
+	mov r7, #0	
+	.LContinuar_bucle_franjas
+
+.LContinuar_bucle_franjas:
+	add r6, #1
+	b .LBucle_franjas
+
+.LPossible_reserva:
+
+.LFi_reservarMem:
+
+	pop {r0-r12, pc}
 
 
 
