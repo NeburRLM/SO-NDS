@@ -159,83 +159,84 @@ _gm_reubicar:
 _gm_reservarMem:
 	push {r0-r12, lr}
 	
-	@; càlcul de les franjas que necessitem
+	@; càlcul de les franjas que necessitem, dividint el tamany en bytes que es necessita reservar per 32 bytes de cada franja
 	push {r0-r3}
 	mov r0, r1
 	mov r1, #32
 	ldr r2, =quo
 	ldr r3, =mod
 	bl _ga_divmod
-	ldr r4, [r2]
-	ldr r5, [r3]
+	ldr r4, [r2]													@; emmagatzemem en r4, el resultat de la divisió (número de franjas que necessitem reservar)
+	ldr r5, [r3]													@; emmagatzemem en r5 el residu de la divisió
 	pop {r0-r3}
 	
-	mov r6, #0	@; contador bucle franjas
-	mov r7, #0	@; contador franjas seguides
-	ldr r8, =_gm_zocMem
-	ldr r9, =NUM_FRANJAS
+	mov r6, #0														@; contador bucle franjas
+	mov r7, #0														@; contador franjas seguides
+	ldr r8, =_gm_zocMem												@; vector _gm_zocMem per gestionar memoria 
+	ldr r9, =NUM_FRANJAS											@; número de posicions que conté el vector 
 	
-	cmp r5, #0	@; comparem si el residu és = 0
-	beq .LBucle_franjas_ 	@; si ho és, comencem amb el tractament de les franjas
-	add r4, #1 	@; si no ho és, incrementem una franja de més necessària  
+	cmp r5, #0														@; comparem si el residu és = 0
+	beq .LBucle_franjas_ 											@; si ho és, comencem amb el tractament de les franjas
+	add r4, #1 														@; si no ho és, incrementem una franja de més necessària  
 
-.LBucle_franjas_:
-	cmp r6, r9	@; comparem si s'ha acabat amb el recorregut del vector
-	bge .LNo_reserva
-	cmp r7, r4
-	bge .LFer_reserva	
-	ldrb r10, [r8, r6]	
-	cmp r10, #0 			
-	beq .LFranja_lliure 
-	bne .LFranja_ocupada
+.LBucle_franjas_:													@; tractament de les franjes del vector _gm_zocMem
+	cmp r6, r9														@; comparem si s'ha acabat amb el recorregut del vector
+	bge .LNo_reserva 												@; si el contador del bucle >= NUM_FRANJAS, haurà tractat totes les posicions del vector sense fer cap reserva de memòria
+	cmp r7, r4														@; comprovem si ja es poden reservar les franjas necessàries
+	bge .LFer_reserva												@; si el número de franjas requerides es poden reservar de manera consecutiva, podrem fer la reserva de memòria
+	ldrb r10, [r8, r6]												@; guardem en r10, el valor de la posició del contador del bucle r6, del vector _gm_zocMem	
+	cmp r10, #0 													@; si en aquesta posició es troba un 0
+	beq .LFranja_lliure 											@; si es troba un 0, la franja actual estarà lliure
+	bne .LFranja_ocupada											@; si es troba un valor != de 0, la franja actual estarà ocupada
 
-.LFranja_lliure:
-	cmp r7, #0														
-	beq .LGuarda_index
+.LFranja_lliure:													
+	cmp r7, #0														@; primer, comprovarem si el contador de franjas seguidas és = 0 										
+	beq .LGuarda_index												@; si és igual a 0, voldrà dir que es comença amb una nova seqüència de franjas seguides, per tal guardarem la posició on comença
 
-.LContinua_franja_lliure:											
-	add r7, #1								 
-	b .LContinuar_bucle_franjas
+.LContinua_franja_lliure:											@; una vegada guardada la posició actual, continuem										
+	add r7, #1														@; incrementem el contador de franjas seguidas					 
+	b .LContinuar_bucle_franjas										@; saltem per incrementar l'índex del bucle i continuar amb el tractament de les franjas
 
 .LGuarda_index:														
-	mov r11, r6														
-	b .LContinua_franja_lliure
+	mov r11, r6														@; guarda l'índex inicial on comença la successió de franjas consecutives dins del vector _gm_zocMem													
+	b .LContinua_franja_lliure 										@; continuem amb la gestió de la franja lliure
 
 .LFranja_ocupada:		
-	mov r7, #0	
-	b .LContinuar_bucle_franjas
+	mov r7, #0														@; fiquem a 0 el contador de franjas consecutives per resetearlo
+	b .LContinuar_bucle_franjas 									@; saltem per incrementar l'índex del bucle i continuar amb el tractament de les franjas
 
 .LContinuar_bucle_franjas:
-	add r6, #1
-	b .LBucle_franjas_
+	add r6, #1 														@; incrementem el contador del bucle de les franjas
+	b .LBucle_franjas_ 												@; continuem amb el bucle
 
-.LFer_reserva:														
-	mov r6, r11														
-	add r10, r11, r4
+.LFer_reserva:		 												@; quan contador de franjas consecutives és igual al número de requerides, farem la reserva de memòria												
+	mov r6, r11														@; guardarem el valor de la posició on comença la seqüència de les franjes consecutives a r6 (índex actual de bucle)										
+	add r10, r11, r4 												@; en r10, guardarem l'última franja del vector que es necessita al fer la reserva (anirà de la posició del valor r6 al de r10)
 	
-.LBucle_reserva:
-	cmp r6, r10 			
-	bge .LPintar_franjasReserva 
-	strb r0, [r8, r6]		 
-	add r6, #1 
-	b .LBucle_reserva 
+.LBucle_reserva: 													@; bucle per gestionar la reserva de les franjas del vector _gm_zocMem
+	cmp r6, r10 	 												@; comparem el contador del bucle r6 amb la posició final de l'última franja		
+	bge .LPintar_franjasReserva  									@; si r6 >= r10, ja s'haurà fet la reserva de totes les franjas i per tant, passarem a fer la representació d'aquesta reserva de franjas
+	strb r0, [r8, r6]	 											@; si encara no s'ha arribat al final, guardarem en la posició de contador del bucle r6 del vector, el valor del zócalo a tractar passat per paràmetre	 
+	add r6, #1 														@; incrementarem el contador del bucle de la reserva
+	b .LBucle_reserva 												@; continuarem amb el bucle de la reserva
 
-.LPintar_franjasReserva:
-	push {r1,r2}	@;r0(zócalo) i r3(tipus segment) ja tenen els seus valors corresponents
-	mov r1, r11	@; índex inicial de la franja
-	mov r2, r7	@; número de franjas a pintar
-	bl _gs_pintarFranjas
-	pop {r1,r2}
-	
-	mov r1, #32
-	ldr r12, =INI_MEM_PROC
-	mla r0, r11, r1, r12
-	b .LFi_reservarMem
+.LPintar_franjasReserva: 											@; si s'ha acabat amb la gestió de la reserva de franjas, farem la representació
+	push {r1,r2}													@; s'emmagatzemen els registres r1 i r2 en la pila per preservar l'estat dels registres abans de modificar els valors dels registres esmentats per realitzar la crida a _gm_pintarFranjas
+	@; r0(zócalo) i r3(tipus segment) ja tenen els seus valors corresponents
+	mov r1, r11														@; guardem en r1 l'índex inicial de la franja
+	mov r2, r7														@; guardem en r2 el número de franjas (consecutives) a pintar
+	bl _gs_pintarFranjas 											@; cridem a la rutina _gm_pintarFranjas
+	pop {r1,r2}														@; restaurem els registres r1 i r2 desde la pila
+	@; retornarem a r0, el valor de la posició de memòria on s'han reservat les franjes consecutives
+	mov r1, #32 													@; guardem en r1 el valor de 32 (32 bytes per franja)
+	ldr r12, =INI_MEM_PROC 											@; guardem en r12 el valor inicial de la posició de la memòria on comencen els processos d'usuari emmagatzemats
+	mla r0, r11, r1, r12 											@; calculem a r0 = (índex incial * 32 bytes) + INI_MEM_PROC
+	b .LFi_reservarMem 												@; acabem amb la rutina _gm_reservarMem
 
-.LNo_reserva:
-	mov r0, #0	
+.LNo_reserva: 														@; si no s'ha pogut fer la reserva (quan el contador del bucle inicial >= NUM_FRANJAS)
+	mov r0, #0	 													@; guardem en r0 un 0 per retornar-lo, indicant que no s'ha pogut realitzar la reserva de memòria
 
-.LFi_reservarMem:
+.LFi_reservarMem:	 												@; finalitzem la rutina de _gm_reservarMem
 
 	pop {r0-r12, pc}
 
