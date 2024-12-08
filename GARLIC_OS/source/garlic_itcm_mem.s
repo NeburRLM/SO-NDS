@@ -191,16 +191,41 @@ _gm_reservarMem:
 	cmp r7, #1
 	bne LContinuar_bucle_franjas
 	mov r11, r6	@; guarda l'índex inicial on comença la franja 
+	b .LContinuar_bucle_franjas
 
 .LFranja_ocupada:		
 	mov r7, #0	
-	.LContinuar_bucle_franjas
+	b .LContinuar_bucle_franjas
 
 .LContinuar_bucle_franjas:
 	add r6, #1
 	b .LBucle_franjas
 
 .LPossible_reserva:
+	mov r6, r11
+	add r10, r11, r4
+	
+.LBucle_reserva:
+	cmp r6, r10 			
+	bge .LPintar_franjasReserva 
+	strb r0, [r8, r6]		 
+	add r6, #1 
+	b .LBucle_reserva 
+
+.LPintar_franjasReserva:
+	push {r1,r2}	@;r0(zócalo) i r3(tipus segment) ja tenen els seus valors corresponents
+	mov r1, r11	@ índex inicial de la franja
+	mov r2, r7	@; número de franjas a pintar
+	bl _gm_pintarFranjas
+	pop {r1,r2}
+	
+	mov r1, #32
+	ldr r12, =INI_MEM_PROC
+	mla r0, r5, r1, r12
+	b .LFi_reservarMem
+
+.LNo_reserva:
+	mov r0, #0	
 
 .LFi_reservarMem:
 
