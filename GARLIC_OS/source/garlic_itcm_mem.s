@@ -16,6 +16,9 @@ INI_MEM_PROC = 0x01002000
 		.global mod
 	mod:	.word 0
 
+				.global _gm_zocMem
+	_gm_zocMem:	.space NUM_FRANJAS	@; vector ocupación franjas
+
 .section .itcm,"ax",%progbits
 
 	.arm
@@ -161,7 +164,7 @@ _gm_reservarMem:
 	mov r0, r1
 	mov r1, #32
 	ldr r2, =quo
-	ldr r3, =res
+	ldr r3, =mod
 	bl _ga_divmod
 	ldr r4, [r2]
 	ldr r5, [r3]
@@ -173,25 +176,30 @@ _gm_reservarMem:
 	ldr r9, =NUM_FRANJAS
 	
 	cmp r5, #0	@; comparem si el residu és = 0
-	beq .LBucle_franjas 	@; si ho és, comencem amb el tractament de les franjas
+	beq .LBucle_franjas_ 	@; si ho és, comencem amb el tractament de les franjas
 	add r4, #1 	@; si no ho és, incrementem una franja de més necessària  
 
-.LBucle_franjas:
+.LBucle_franjas_:
 	cmp r6, r9	@; comparem si s'ha acabat amb el recorregut del vector
-	bge .LFi_reservarMem	
-	cmp r7, r4	@; comprovem si ja es poden reservar les franjas necessàries
-	beq .LPossible_reserva
+	bge .LNo_reserva
+	cmp r7, r4
+	bge .LFer_reserva	
 	ldrb r10, [r8, r6]	
 	cmp r10, #0 			
 	beq .LFranja_lliure 
 	bne .LFranja_ocupada
 
 .LFranja_lliure:
-	add r7, #1
-	cmp r7, #1
-	bne LContinuar_bucle_franjas
-	mov r11, r6	@; guarda l'índex inicial on comença la franja 
+	cmp r7, #0														
+	beq .LGuarda_index
+
+.LContinua_franja_lliure:											
+	add r7, #1								 
 	b .LContinuar_bucle_franjas
+
+.LGuarda_index:														
+	mov r11, r6														
+	b .LContinua_franja_lliure
 
 .LFranja_ocupada:		
 	mov r7, #0	
@@ -199,10 +207,10 @@ _gm_reservarMem:
 
 .LContinuar_bucle_franjas:
 	add r6, #1
-	b .LBucle_franjas
+	b .LBucle_franjas_
 
-.LPossible_reserva:
-	mov r6, r11
+.LFer_reserva:														
+	mov r6, r11														
 	add r10, r11, r4
 	
 .LBucle_reserva:
@@ -214,14 +222,14 @@ _gm_reservarMem:
 
 .LPintar_franjasReserva:
 	push {r1,r2}	@;r0(zócalo) i r3(tipus segment) ja tenen els seus valors corresponents
-	mov r1, r11	@ índex inicial de la franja
+	mov r1, r11	@; índex inicial de la franja
 	mov r2, r7	@; número de franjas a pintar
-	bl _gm_pintarFranjas
+	bl _gs_pintarFranjas
 	pop {r1,r2}
 	
 	mov r1, #32
 	ldr r12, =INI_MEM_PROC
-	mla r0, r5, r1, r12
+	mla r0, r11, r1, r12
 	b .LFi_reservarMem
 
 .LNo_reserva:
