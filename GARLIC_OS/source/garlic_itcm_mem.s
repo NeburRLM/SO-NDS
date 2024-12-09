@@ -225,7 +225,7 @@ _gm_reservarMem:
 	@; r0(zócalo) i r3(tipus segment) ja tenen els seus valors corresponents
 	mov r1, r11														@; guardem en r1 l'índex inicial de la franja
 	mov r2, r7														@; guardem en r2 el número de franjas (consecutives) a pintar
-	bl _gs_pintarFranjas 											@; cridem a la rutina _gm_pintarFranjas
+	bl _gs_pintarFranjas 											@; cridem a la rutina _gs_pintarFranjas
 	pop {r1,r2}														@; restaurem els registres r1 i r2 desde la pila
 	@; retornarem a r0, el valor de la posició de memòria on s'han reservat les franjes consecutives
 	mov r1, #32 													@; guardem en r1 el valor de 32 (32 bytes per franja)
@@ -250,55 +250,57 @@ _gm_reservarMem:
 	@;Parámetros
 	@;	R0: el número de zócalo que libera la memoria
 _gm_liberarMem:
-	push {r0-r12,lr}
+	push {r0-r7,lr}
 	
-	ldr r1, =gm_zocMem
-	mov r2, #0														@; índex bucle
-	ldr r5, =NUM_FRANJAS
+	ldr r1, =gm_zocMem												@; carreguem el vector _gm_zocMem per gestionar memoria que ocupa cada segment		
+	mov r2, #0														@; índex bucle per fer el recorregut pel vector
+	ldr r5, =NUM_FRANJAS											@; carreguem el número de posicions que conté el vector
+	mov r4, #0														@; contador del número de franjas a pintar
 	
-.LBucle_franjas:
-	ldrb r3, [r1, r2]
-	mov r4, #0
-	cmp r3, r0
-	beq .LContar_num_franjas
-	bne .LComprovar_bucle_franjas
+.LBucle_franjas:													@; bucle incial
+	ldrb r3, [r1, r2]												@; carreguem el valor de la posició del vector r2 al registre r3
+	mov r7, r2														@; r7 -> posició del índex inicial de la franja
+	cmp r3, r0														@; comparem el valor carregat anteriorment del vector amb el zócalo
+	beq .LContar_num_franjas										@; si el valor carregat del vector és igual al número del zócalo a tractar, comencem a contar les franjes consecutives
+	bne .LComprovar_bucle_franjas 									@; sinó, fem una comprovació per seguir amb el recorregut del vector
 
-.LContar_num_franjas:
-	add r4, #1														@; num franjes consecutives amb el mateix zócalo
-	mov r6, #0														@; guardem un 0 a r6
-	strb r6, [r1, r2]												@; emmagatzemem el 0 anterior a la posició actual del zócalo a tractar per treure'l de la franja
-	b .LComprovar_bucle_num_franjas
+.LContar_num_franjas:												@; bucle quan el es cumpleix la primera comparació de r3 == r0
+	add r4, #1														@; contador del número de franjas a pintar ho incrementem a 1
+	mov r6, #0														@; r6 = 0, per guardar un 0 a la posició de r2 != de 0 (mateix número del zocalo)
+	strb r6, [r1, r2]												@; emmagatzemem el 0 anterior a la posició actual del vector a tractar per treure de la franja del vector el zócalo en ús
+	b .LComprovar_bucle_num_franjas									@; seguirem amb el recorregut contant el número de franjas a pintar mentre sigui igual que el zócalo a tractar
 
-.LContinuar_bucle_num_franjas:	
-	ldrb r3, [r1, r2] 												
-	cmp r3, r0
-	beq .LContar_num_franjas							
-	bne .LPintar_franjas			
+.LContinuar_bucle_num_franjas:										@; continuació del bucle .LContar_num_franjas una vegada comprovat que l'índex del bucle és més petit que el número de franjas
+	ldrb r3, [r1, r2] 												@; carreguem el valor de la posició del vector r2 al registre r3									
+	cmp r3, r0														@; comparem el valor carregat anteriorment del vector amb el zócalo
+	beq .LContar_num_franjas										@; si els valors són iguals, continuem amb el bucle per tal d'incrementar el contador del número de franjas a pintar						
+	bne .LPintar_franjas											@; sinó, passem a preparar els registres per passar-li correctament els valors a la rutina _gm_pintarFranjas			
 
 .LPintar_franjas:
-	push {r1-r3}
-	mov r0, r4					
-	mov r1, r2
-	mov r3, #0					
-	bl _gm_pintarFranjas
-	pop {r0-r3}
-	b .LBucle_franjas
+	push {r0-r3}													@; s'emmagatzemen els registres r0 a r3 en la pila per preservar l'estat dels registres abans de modificar els valors dels registres esmentats per realitzar la crida a _gm_pintarFranjas
+	mov r0, #0														@; número de zocalo				
+	mov r1, r7														@; índex incial de la franja
+	mov r2, r4														@; número de franjas a pintar
+	mov r3, #0														@; tipus de segment (volem eliminar tant el de codi com el de dades, per tant podem passar-li 0 o 1)			
+	bl _gs_pintarFranjas											@; fem un branch with link a la rutina _gs_pintarFranjas
+	pop {r0-r3}														@; restaurem els registres r0 a r3 desde la pila, d'aquesta manera podem seguir utilitzant aquests registres amb els valors que tenien inicials 
+	b .LComprovar_bucle_franjas										@; comprovarem si podem seguir amb el tractament del vector de franjas una vegada hem acabat de tractar el primer segment
 	
-.LComprovar_bucle_num_franjas:
-	add r2, #1
-	cmp r2, r5
-	bge .LFi
-	b .LContinuar_bucle_num_franjas
+.LComprovar_bucle_num_franjas:										@; comprovació per seguir amb el tractament quan r3 == r0
+	add r2, #1														@; incrementem el valor de l'índex de la posició a tractar del vector
+	cmp r2, r5														@; comparem aquest índex amb el valor de NUM_FRANJAS
+	bge .LFiLiberarMem												@; si r2>=NUM_FRANJAS, finalitzem amb la rutina ja que ja haurem tractat tot el vector
+	b .LContinuar_bucle_num_franjas									@; sinó, continuarem amb el tractament quan r3 == r0
 	
-.LComprovar_bucle_franjas:
-	add r2, #1
-	cmp r2, r5
-	bge .LFiLiberar
+.LComprovar_bucle_franjas:											@; comprovació per seguir amb el tractament quan r3 era diferent de r0
+	add r2, #1														@; incrementem el valor de l'índex de la posició a tractar del vector 
+	cmp r2, r5														@; comparem aquest índex amb el valor de NUM_FRANJAS
+	bge .LFiLiberarMem												@; si r2>=NUM_FRANJAS, finalitzem amb la rutina ja que ja haurem tractat tot el vector
+	b .LBucle_franjas												@; sinó, continuarem amb el tractament quan r3 ha sigut diferent de r0
 
+.LFiLiberarMem:														@; finalitzem rutina de _gm_liberarMem	
 
-.LFiLiberar:
-
-	pop {r0-r12,pc}
+	pop {r0-r7,pc}
 
 
 
