@@ -344,16 +344,18 @@ _gp_restaurarProc:
 	@; Rutina para actualizar la cola de procesos retardados, poniendo en
 	@; cola de READY aquellos cuyo número de tics de retardo sea 0
 _gp_actualizarDelay:
-	push {r0-r8, lr}
-	@; TODO: descubrir com canviar el pidz per treure el bit que s'ha posat a 1 perque es pugui salvar el context
+	push {r0-r11, lr}
 	ldr r0, =_gd_qDelay
 	ldr r1, =_gd_nDelay
 	ldr r2, [r1]
 	ldr r6, =_gd_qReady
 	ldr r7, =_gd_nReady
 	ldr r8, [r7]
+	ldr r9, =_gd_pcbs
 	mov r3, #0				@; desplazamiento
 	mov r5, #0xfffffff		@; mascara para tst
+	mov r11, #0
+	bl _gp_inhibirIRQs
 	.LsegD:
 		cmp r3, r2
 		beq .LfiActD
@@ -361,7 +363,12 @@ _gp_actualizarDelay:
 		tst r4, r5
 		bne .LsegD
 		mov r4, r4, lsl #8	@; ponemos el zocalo en los 8 bits bajos
-		str r4, [r6, r8]	@; añadimos el proceso en la cola de Ready
+		ldr r10, [r9, r4]	@; obtenemos el pid
+		mov r10, r10, lsl #1
+		and r10, r10, r11
+		mov r10, r10, lsr #1	@; ponemos el bit mas alto a 0 para indicar que ya no esta en delay
+		str r10, [r9, r4]		@; guardamos el nuevo pid
+		strb r4, [r6, r8]	@; añadimos el proceso en la cola de Ready
 		add r8, #1
 		.LiniMovD:
 			cmp r3, r2
@@ -378,7 +385,8 @@ _gp_actualizarDelay:
 	.LfiActD:
 		str r8, [r7]			@; guardamos las nuevas n de las 2 colas
 		str r2, [r1]
-	pop {r0-r8, pc}
+		bl _gp_desinhibirIRQs
+	pop {r0-r11, pc}
 
 
 	.global _gp_numProc
@@ -417,18 +425,20 @@ _gp_crearProc:
 		mov r5, #24		@; 24 => 6 int's del registro * 4 (ocupación de un int)
 		mla r6, r5, r1, r4	@; multiplicamos r5 i r1 para saber el desplazamiento para llegar al PID del zocalo que queremos ver y le sumamos r4 que es la direccion inicial del vector de pcbs
 		ldr r5, [r6]
-		@; si el PID es 0 significa que esta llibre, sino significa que esta ocupado
+		@; si el PID es 0 significa que esta libre, sino significa que esta ocupado
 		cmp r5, #0
 		movne r0, #2	@; usaremos 2 para indicar que el error es porque el zocalo esta ocupado
 		bne .LfinalCP
 		
 		@; obtener un nuevo PID para el nuevo proceso y guardar su nuevo valor
+		@; inhibimos este fragmento de codigo porque es importante que si ya se obtiene un pid la variable pidCount aumente y que este pid se guarde en el campo pid para que ningun otro proceso use el mismo pid
+		bl _gp_inhibirIRQs
 		ldr r5, =_gd_pidCount
 		ldr r7, [r5]
 		add r7, #1
 		str r7, [r5]
 		str r7, [r6]
-		
+		bl _gp_desinhibirIRQs
 		@; guardamos la dirección de la rutina inicial del proceso (r0)
 		@; compensamos el decremento
 		add r0, #4
@@ -478,10 +488,13 @@ _gp_crearProc:
 		ldr r8, =_gd_qReady
 		ldr r9, =_gd_nReady
 		ldr r10, [r9]
+		@; es importante que si añadimos el proceso a la cola de ready nReady aumente en 1 para mantener la consistencia
+		bl _gp_inhibirIRQs
 		strb r1, [r8, r10]
 		@;incrementamos la variable _gd_nReady
 		add r10, #1
 		str r10, [r9]
+		bl _gp_desinhibirIRQs
 		
 		@; inicializamos otras variables del pcb (en este caso solo queda workTicks)
 		mov r8, #0
@@ -535,7 +548,9 @@ _gp_matarProc:
 	ldr r1, =_gd_pcbs		@; cargamos la dirección del vector de pcbs
 	mov r2, #24
 	mla r3, r2, r0, r1		@; calculamos el desplazamiento
-	mov r4, #0				
+	mov r4, #0	
+	@; inhibimos las IRQs porque si ya tenemos puesto el PID a 0 es importante asegurarse de que se ha eliminado el proceso de la cola correspondiente en el que se encuentre para que no haya incoherencias
+	bl _gp_inhibirIRQs
 	str r4, [r1, r3]		@; ponemos el PID a 0
 	
 	ldr r5, =_gd_qReady
@@ -577,6 +592,7 @@ _gp_matarProc:
 			blo .Lmoure
 			
 	.LfiMP:
+		bl _gp_desinhibirIRQs
 	pop {r1-r10, pc}
 	
 .global _gp_retardarProc
@@ -598,6 +614,7 @@ _gp_retardarProc:
 	ldr r5, =_gd_qDelay
 	ldr r6, =_gd_nDelay
 	ldr r7, [r6]
+	bl _gp_inhibirIRQs	@; inhibimos las IRQ porque si añadimos el proceso en la cola de delay sera necesario tambien aumentar el numero de procesos en la cola de delay para que no haya incoherencias y indicamos en el pidz que el proceso esta en la cola de delay
 	str r3, [r5, r7]	@; añadimos en la cola el word creado
 	add r7, #1
 	str r7, [r6]		@; incrementamos el numero de procesos en delay
@@ -606,6 +623,7 @@ _gp_retardarProc:
 	orr r4, r4, r5
 	mov r4, r4, lsr #1	@; ponemos el bit mas alto a 1
 	str r4, [r1]		@; guardamos el nuevo pidz
+	bl _gp_desinhibirIRQs
 	bl _gp_WaitForVBlank	@; invocamos a la nueva rutina
 	pop {r1-r7, pc}			@; no retornará hasta que se haya agotado el retardo
 
@@ -638,7 +656,7 @@ _gp_desinhibirIRQs:
 	@; gráfico secundario está correctamente configurado, se imprime en la
 	@; columna correspondiente de la tabla de procesos.
 _gp_rsiTIMER0:
-	push {lr}
+	push {r0-r11, lr}
 	ldr r9, =_gd_pcbs
 	mov r10, #24
 	mov r11, #0
@@ -697,7 +715,7 @@ _gp_rsiTIMER0:
 		mov r2, #1
 		orr r3, r1, r2
 		str r3, [r0]
-	pop {pc}
+	pop {r0-r11, pc}
 
 .end
 
