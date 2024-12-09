@@ -157,7 +157,7 @@ _gm_reubicar:
 	@;Resultado
 	@;	R0: dirección inicial de memoria reservada (0 si no es posible)
 _gm_reservarMem:
-	push {r0-r12, lr}
+	push {r0-r12,lr}
 	
 	@; càlcul de les franjas que necessitem, dividint el tamany en bytes que es necessita reservar per 32 bytes de cada franja
 	push {r0-r3}
@@ -238,7 +238,7 @@ _gm_reservarMem:
 
 .LFi_reservarMem:	 												@; finalitzem la rutina de _gm_reservarMem
 
-	pop {r0-r12, pc}
+	pop {r0-r12,pc}
 
 
 
@@ -250,10 +250,55 @@ _gm_reservarMem:
 	@;Parámetros
 	@;	R0: el número de zócalo que libera la memoria
 _gm_liberarMem:
-	push {lr}
+	push {r0-r12,lr}
+	
+	ldr r1, =gm_zocMem
+	mov r2, #0														@; índex bucle
+	ldr r5, =NUM_FRANJAS
+	
+.LBucle_franjas:
+	ldrb r3, [r1, r2]
+	mov r4, #0
+	cmp r3, r0
+	beq .LContar_num_franjas
+	bne .LComprovar_bucle_franjas
+
+.LContar_num_franjas:
+	add r4, #1														@; num franjes consecutives amb el mateix zócalo
+	mov r6, #0														@; guardem un 0 a r6
+	strb r6, [r1, r2]												@; emmagatzemem el 0 anterior a la posició actual del zócalo a tractar per treure'l de la franja
+	b .LComprovar_bucle_num_franjas
+
+.LContinuar_bucle_num_franjas:	
+	ldrb r3, [r1, r2] 												
+	cmp r3, r0
+	beq .LContar_num_franjas							
+	bne .LPintar_franjas			
+
+.LPintar_franjas:
+	push {r1-r3}
+	mov r0, r4					
+	mov r1, r2
+	mov r3, #0					
+	bl _gm_pintarFranjas
+	pop {r0-r3}
+	b .LBucle_franjas
+	
+.LComprovar_bucle_num_franjas:
+	add r2, #1
+	cmp r2, r5
+	bge .LFi
+	b .LContinuar_bucle_num_franjas
+	
+.LComprovar_bucle_franjas:
+	add r2, #1
+	cmp r2, r5
+	bge .LFiLiberar
 
 
-	pop {pc}
+.LFiLiberar:
+
+	pop {r0-r12,pc}
 
 
 
