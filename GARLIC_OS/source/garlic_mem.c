@@ -198,8 +198,7 @@ intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 									//aplica reubicancions per ajustar referències amb respecte al segment de codi en funció de taulaSeg.p_paddr
 									_gm_reubicar(buffer, paddrSegCodi, (unsigned int *)primerDirCodi, 0, (unsigned int *)0);
 								}
-								//direcció d'inici del programa a la memòria física, tenint en compte totes les reubicacions necessàries perquè el programa s'executi correctament des de la posició en memòria on s'ha carregat
-								adrProg = (intFunc) (_gm_primeraPosMem + entry - paddrSegCodi);				
+								
 							} else {
 								_gm_liberarMem(zocalo);								//si no s'ha pogut reservar la memòria requerida, alliberem a partir del zocalo
 							}								
@@ -232,6 +231,8 @@ intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 				}
 				offset = offset + capcaleraElf.e_phentsize;							//actualitzem offset per a que apunti al següent segment del .elf a partir del tamany de cada entrada
 			}
+			//direcció d'inici del programa a la memòria física, tenint en compte totes les reubicacions necessàries perquè el programa s'executi correctament des de la posició en memòria on s'ha carregat
+			adrProg = (intFunc) (primerDirCodi + entry - paddrSegCodi);
 		}
 		free(buffer);																//netejem buffer
 	}																

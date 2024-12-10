@@ -290,8 +290,8 @@ int main(int argc, char **argv) {
 
 	if (test0())
 	{
-		if (test1())
-			test2();
+		test1();
+			
 	}
 	_gg_escribir("\n*** Final fase 2 / ProgM\n", 0, 0, 0);
 	while (1) _gp_WaitForVBlank();

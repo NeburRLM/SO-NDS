@@ -157,7 +157,7 @@ _gm_reubicar:
 	@;Resultado
 	@;	R0: dirección inicial de memoria reservada (0 si no es posible)
 _gm_reservarMem:
-	push {r0-r12,lr}
+	push {r1-r12,lr}
 	
 	@; càlcul de les franjas que necessitem, dividint el tamany en bytes que es necessita reservar per 32 bytes de cada franja
 	push {r0-r3}
@@ -238,7 +238,7 @@ _gm_reservarMem:
 
 .LFi_reservarMem:	 												@; finalitzem la rutina de _gm_reservarMem
 
-	pop {r0-r12,pc}
+	pop {r1-r12,pc}
 
 
 
@@ -252,7 +252,7 @@ _gm_reservarMem:
 _gm_liberarMem:
 	push {r0-r7,lr}
 	
-	ldr r1, =gm_zocMem												@; carreguem el vector _gm_zocMem per gestionar memoria que ocupa cada segment		
+	ldr r1, =_gm_zocMem												@; carreguem el vector _gm_zocMem per gestionar memoria que ocupa cada segment		
 	mov r2, #0														@; índex bucle per fer el recorregut pel vector
 	ldr r5, =NUM_FRANJAS											@; carreguem el número de posicions que conté el vector
 	mov r4, #0														@; contador del número de franjas a pintar
