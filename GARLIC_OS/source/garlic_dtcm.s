@@ -51,4 +51,10 @@ _gd_sem: .space 8
 .global _gd_perc				@; Variable para guardar el procentage en string
 _gd_perc: .word 0
 
+.global _gd_quo					@; Variable para guardar el cuociente de la division
+_gd_quo: .word 0
+
+.global _gd_mod					@; Variable para guardar el modulo de la division
+_gd_mod: .word 0
+
 .end

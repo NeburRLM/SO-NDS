@@ -54,10 +54,10 @@ void inicializarSistema() {
 	irqSet(IRQ_VBLANK, _gp_rsiVBL);	// instalar RSI de vertical Blank
 	irqEnable(IRQ_VBLANK);			// activar interrupciones de vertical Blank
 
-	/*irqSet(IRQ_TIMER0, _gp_rsiTIMER0);
+	irqSet(IRQ_TIMER0, _gp_rsiTIMER0);
 	irqEnable(IRQ_TIMER0);				// instalar la RSI para el TIMER0
 	TIMER0_DATA = divFreq0; 
-	TIMER0_CR = 0xC3;*/  	// Timer Start | IRQ Enabled | Prescaler 3 (F/1024)
+	TIMER0_CR = 0xC3;  	// Timer Start | IRQ Enabled | Prescaler 3 (F/1024)
 	
 	REG_IME = IME_ENABLE;			// activar las interrupciones en general
 }

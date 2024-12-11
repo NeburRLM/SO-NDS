@@ -86,6 +86,10 @@ extern int _gm_primeraPosMem;	// contindr� la primera posici� de mem�ria l
 
 extern int _gd_perc;			// contendrá el porcentage en string
 
+extern int _gd_quo;				// contendrá el cuociente de la division
+
+extern int _gd_mod;				// contendrá el modulo de la division
+
 //------------------------------------------------------------------------------
 //	Rutinas de gesti�n de procesos (garlic_itcm_proc.s)
 //------------------------------------------------------------------------------

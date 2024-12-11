@@ -660,17 +660,22 @@ _gp_rsiTIMER0:
 	mov r5, #0
 	.Lsuma:
 		cmp r11, #15
-		movge r11, #0
+		movgt r11, #0
 		bgt .Lperc			@; comprovamos si hemos visto todas las posiciones del vector de pcbs
 		mla r3, r10, r11, r9	@; calculamos la dirección inicial de cada pcb
 		ldr r4, [r3]		@; accedemos al PID para ver si hay un proceso
 		cmp r4, #0
-		addeq r11, #1		@; si no hay proceso pasamos al siguiente pcb
-		beq .Lsuma
-		ldr r4, [r3, #20]	@; accedemos a los workticks
-		add r5, r4
-		add r11, #1
-		b .Lsuma
+		beq .LesSO
+		.LaccWork:
+			ldr r4, [r3, #20]	@; accedemos a los workticks
+			add r5, r4			@; guardamos el total de los procesos
+			add r11, #1
+			b .Lsuma
+		.LesSO:					@; miramos si el proceso es el del sistema operativo para tenerlo en cuenta
+			cmp r11, #0
+			addne r11, #1
+			bne .Lsuma
+			beq .LaccWork
 	
 	.Lperc:
 		cmp r11, #15
@@ -678,34 +683,45 @@ _gp_rsiTIMER0:
 		mla r3, r10, r11, r9
 		ldr r4, [r3]
 		cmp r4, #0
-		addeq r11, #1
-		beq .Lperc
-		ldr r4, [r3, #20]
-		mov r6, r4, lsr r5		@; dividimos los workticks del proceso con los workticks totales
-		mov r7, #100
-		mul r6, r7				@; y multiplicamos por 100 para obtener el porcentage
-		mov r8, #0
-		and r4, r4, r8			@; ponemos a 0 los workticks
-		mov r8, r6
-		mov r8, r8, lsr #8		@; ponemos el porcentage en los 8 bits altos
-		str r8, [r3, #20]		@; guardamos en workticks
-		@; pasar el porcentaje a string
-		ldr r0, =_gd_perc
-		mov r1, #4
-		mov r2, r6
-		bl _gs_num2str_dec
-		@; escribir en la pantalla el porcentage
-		@; en r0 -> string acabado con centinela
-		@; en r1 -> fila
-		@; en r2 -> columna
-		@; en r3 -> color
-		ldr r0, =_gd_perc
-		mov r2, #28
-		mov r3, #0
-		bl _gs_escribirStringSub
-		add r11, #1
-		b .Lperc
-		
+		beq .LesSO2
+		.LsegPerc:
+			ldr r4, [r3, #20]
+			mov r7, #100
+			mul r4, r7
+			mov r0, r4
+			mov r1, r5
+			ldr r2, =_gd_quo
+			ldr r3, =_gd_mod
+			bl _ga_divmod				@; dividimos para obtener el porcentaje
+			ldr r2, [r2]
+			ldr r3, [r3]
+			mov r8, #0
+			and r4, r4, r8			@; ponemos a 0 los workticks
+			mov r8, r2
+			mov r8, r8, lsr #8		@; ponemos el porcentage en los 8 bits altos
+			str r8, [r3, #20]		@; guardamos en workticks
+			@; pasar el porcentaje a string
+			ldr r0, =_gd_perc
+			mov r1, #4
+			@;mov r2, r6
+			bl _gs_num2str_dec
+			@; escribir en la pantalla el porcentage
+			@; en r0 -> string acabado con centinela
+			@; en r1 -> fila
+			@; en r2 -> columna
+			@; en r3 -> color
+			ldr r0, =_gd_perc
+			add r1, r11, #4
+			mov r2, #28
+			mov r3, #0
+			bl _gs_escribirStringSub
+			add r11, #1
+			b .Lperc
+		.LesSO2:				@; mirem si el proces es el del so per tindrel en comte
+			cmp r11, #0
+			addne r11, #1
+			bne .Lperc
+			beq .LsegPerc
 	.LfiRSI:
 		ldr r0, =_gd_sincMain
 		ldr r1, [r0]
