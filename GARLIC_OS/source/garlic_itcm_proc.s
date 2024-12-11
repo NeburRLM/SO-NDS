@@ -69,22 +69,6 @@ _gp_IntrMain:
 	@; se encarga de actualizar los tics, intercambiar procesos, etc.;
 _gp_rsiVBL:
 	push {r4-r7, lr}
-		@; decremento de los tics de los procesos en Delay
-		mov r5, #0
-		.LdecTics:
-			ldr r4, =_gd_nDelay
-			ldr r4, [r4]
-			cmp r4, r5
-			beq .LfiDecTics
-			ldr r6, =_gd_qDelay
-			ldr r7, [r6, r5]
-			sub r7, #1				@; restamos 1 tic
-			str r7, [r6, r5]
-			add r5, #1
-			b .LdecTics
-		.LfiDecTics:
-			bl _gp_actualizarDelay
-		
 		@; incremento del contador de tics
 		ldr r4, =_gd_tickCount
 		ldr r5, [r4]
@@ -107,6 +91,7 @@ _gp_rsiVBL:
 		orr r5, r4, r6
 		str	r5, [r7, #20]
 
+		bl _gp_actualizarDelay
 		
 		@; miramos si hay algun proceso en la cola de ready
 		ldr r4, =_gd_nReady
@@ -150,15 +135,19 @@ _gp_salvarProc:
 		@; miramos si el proceso debe ir a la cola de Delay o a la de Ready
 		ldr r8, [r6]
 		mov r8, r8, lsl #1
-		mov r9, #1
-		tst r8, r9
-		moveq r8, r8, lsr #1		@; volvemos a poner el pidz como estaba
-		beq .LsaltarR				@; en el caso de que el bit más alto este en 1 no lo guardamos en la cola de Ready
+		ands r9, r8, #1			@; si el bit no es 1 entonces lo trataremos como un proceso sin delay, pero si es 1 lo trataremos con delay
+		movne r8, r8, lsr #1
+		beq .LesReady
+		mov r8, r8, lsl #8		@; ponemos en los 8 bits bajos el numero de zocalo
+		and r8, #0xF			@; cogemos solo el numero de zocalo
+		b .LsaltarR
+		
 		@; guardamos el numero de zocalo en la ultima posición de la cola de ready
-		ldr r8, [r6]				@; sabemos que _gd_pidz => PID + num. zocalo
-		and r8, #0xf				@; num. zocalo
-		ldr r9, =_gd_qReady
-		strb r8, [r9, r5]
+		.LesReady:
+			ldr r8, [r6]				@; sabemos que _gd_pidz => PID + num. zocalo
+			and r8, #0xf				@; num. zocalo
+			ldr r9, =_gd_qReady
+			strb r8, [r9, r5]
 		
 		.LsaltarR:
 		
@@ -348,44 +337,50 @@ _gp_actualizarDelay:
 	ldr r0, =_gd_qDelay
 	ldr r1, =_gd_nDelay
 	ldr r2, [r1]
-	ldr r6, =_gd_qReady
-	ldr r7, =_gd_nReady
-	ldr r8, [r7]
-	ldr r9, =_gd_pcbs
-	mov r3, #0				@; desplazamiento
-	mov r5, #0xfffffff		@; mascara para tst
-	mov r11, #0
-	bl _gp_inhibirIRQs
-	.LsegD:
+	ldr r5, =_gd_qReady
+	ldr r6, =_gd_nReady
+	ldr r7, [r6]
+	ldr r8, =_gd_pcbs
+	mov r3, #0
+	.Ldecrementar:
 		cmp r3, r2
-		beq .LfiActD
+		beq .LfiDecrementar
 		ldr r4, [r0, r3]
-		tst r4, r5
-		bne .LsegD
-		mov r4, r4, lsl #8	@; ponemos el zocalo en los 8 bits bajos
-		ldr r10, [r9, r4]	@; obtenemos el pid
-		mov r10, r10, lsl #1
-		and r10, r10, r11
-		mov r10, r10, lsr #1	@; ponemos el bit mas alto a 0 para indicar que ya no esta en delay
-		str r10, [r9, r4]		@; guardamos el nuevo pid
-		strb r4, [r6, r8]	@; añadimos el proceso en la cola de Ready
-		add r8, #1
-		.LiniMovD:
-			cmp r3, r2
-			beq .LfiMovD
-			add r3, #1
-			ldr r4, [r0, r3]	@; obtenemos el siguiente proceso de la cola de Delay
-			sub r3, #1
-			str r4, [r0, r3]	@; guardamos en la posicion anterior
-			add r3, #1
-			b .LiniMovD
-		.LfiMovD:
-			sub r2, #1			@; como eliminamos un proceso de la cola de Delay tambien restamos 1 a nDelay
-			b .LsegD			@; miramos el siguiente proceso
-	.LfiActD:
-		str r8, [r7]			@; guardamos las nuevas n de las 2 colas
+		ldr r11, =0xFFFFFF
+		tst r4, r11				@; si tots els bits estan a 1 significa que el proces esta a la cua de delay per un bloqueig d'un semafor
+		addne r3, #1
+		bne .Ldecrementar
+		sub r4, #1
+		ldr r11, =0xFFFF
+		tst r4, r11				@; mirem si ja ha arribat a 0
+		beq .LaReady
+		str r4, [r0, r3]		@; sino guardem amb el decrement
+		add r3, #1
+		b .Ldecrementar
+	.LaReady:
+		mov r4, r4, lsl #8		@; posem el zocalo als 4 bits baixos
+		str r4, [r5, r6]		@; guardem el proces a la cua de ready
+		add r7, #1
+		str r7, [r6]			@; incrementem el numero de procesos a la cua de ready
+		sub r2, #1				@; restem el proces a la cua de delay
 		str r2, [r1]
-		bl _gp_desinhibirIRQs
+		ldr r9, [r8, r4]
+		mov r9, r9, lsl #1		@; canveim el bit mes alt del pid per posarlo a 0 i que ja no sigui ignorat
+		mov r10, #0
+		and r9, r9, r10
+		mov r9, r9, lsr #1
+		str r9, [r8, r4]
+		mov r11, r3
+		.LiniMovD:
+			cmp r11, r2
+			beq .Ldecrementar	@; quan ja els em mogut tots seguim decrementan
+			add r11, #1
+			ldr r4, [r0, r11]
+			sub r11, #1
+			str r4, [r0, r11]
+			add r11, #1
+			b .LiniMovD
+	.LfiDecrementar:
 	pop {r0-r11, pc}
 
 
@@ -634,7 +629,8 @@ _gp_retardarProc:
 _gp_inhibirIRQs:
 	push {r0-r1, lr}
 	ldr r0, =0x4000208	@; cargamos la dirección del registro IME
-	mov r1, #0
+	ldr r1, [r0]
+	bic r1, #1
 	str r1, [r0]
 	pop {r0-r1, pc}
 	
@@ -644,7 +640,8 @@ _gp_inhibirIRQs:
 _gp_desinhibirIRQs:
 	push {r0-r1, lr}
 	ldr r0, =0x4000208
-	mov r1, #1
+	ldr r1, [r0]
+	orr r1, #1
 	str r1, [r0]
 	pop {r0-r1, pc}
 	
