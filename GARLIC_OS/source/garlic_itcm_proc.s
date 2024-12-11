@@ -546,7 +546,7 @@ _gp_matarProc:
 	mov r4, #0	
 	@; inhibimos las IRQs porque si ya tenemos puesto el PID a 0 es importante asegurarse de que se ha eliminado el proceso de la cola correspondiente en el que se encuentre para que no haya incoherencias
 	bl _gp_inhibirIRQs
-	str r4, [r1, r3]		@; ponemos el PID a 0
+	str r4, [r3]		@; ponemos el PID a 0
 	
 	ldr r5, =_gd_qReady
 	ldr r6, =_gd_nReady
@@ -577,6 +577,7 @@ _gp_matarProc:
 	
 	.Ltreure:
 	sub r7, #1 				@; restamos 1 al numero de procesos en cola de Ready
+	str r7, [r6]
 		.Lmoure:
 			add r4, #1
 			ldr r1, [r5, r4]
@@ -585,6 +586,8 @@ _gp_matarProc:
 			add r4, #1
 			cmp r7, r4
 			blo .Lmoure
+			mov r7, #0
+			str r7, [r5, r4]
 			
 	.LfiMP:
 		bl _gp_desinhibirIRQs
