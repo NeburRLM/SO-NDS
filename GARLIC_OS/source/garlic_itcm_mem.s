@@ -19,6 +19,11 @@ INI_MEM_PROC = 0x01002000
 				.global _gm_zocMem
 	_gm_zocMem:	.space NUM_FRANJAS	@; vector ocupación franjas
 
+.section .data
+	l_R: .asciz "R"
+	l_Y: .asciz "Y"
+	l_B: .asciz "B"
+
 .section .itcm,"ax",%progbits
 
 	.arm
@@ -308,10 +313,71 @@ _gm_liberarMem:
 	@; Rutina de Servicio de Interrupción (RSI) para actualizar la representa-
 	@; ción de la pila y el estado de los procesos activos.
 _gm_rsiTIMER1:
-	push {lr}
+	push {r0-r7,lr}
+	
+	ldr r1, =_gd_pidz		@; número de zócalos a RUN
+	ldr r4, [r1]
+		
+	and r4, #0xF
+	bl _gs_representarPilas
+			
+	ldr r0, =l_R
+	add r1, r4, #4
+	mov r2, #26
+	mov r3, #1
+	bl _gs_escribirStringSub
+		
+	ldr r1, =_gd_nReady		@; número de zócalos a la cua de ready
+	ldrb r4, [r1]			@; valor del número de zócalos a la cua de ready 
+		
+	ldr r5, =_gd_qReady		@; cua de ready
+	mov r6, #0				@; contador bucle
+		
+.LCuaRdy:
+	cmp r4, r6				@; comparem valors
+	beq .LFiCuaRdy			@; si ja hem tractat tots els zócalos de la cua de ready, acabem amb el bucle
+	ldrb r7, [r5, r6]		@; sinò, carreguem el valor del zócalo de la cua de ready
 
+	ldr r0, =l_Y
+	add r1, r7, #4
+	mov r2, #26
+	mov r3, #0
+	bl _gs_escribirStringSub
 
-	pop {pc}
+	bl _gs_representarPilas
+	
+	add r6, #1
+	b .LCuaRdy
+	
+.LFiCuaRdy:
+		
+	ldr r1, =_gd_nDelay		@; número de zócalos a la cua de delay
+	ldrb r4, [r1]			@; valor del número de zócalos a la cua de delay 
+		
+	ldr r5, =_gd_qDelay		@; cua de delay
+	mov r6, #0				@; contador bucle
+		
+.LCuaBlk:
+	cmp r4, r6				@; comparem valors
+	beq .LFiCuaBlk			@; si ja hem tractat tots els zócalos de la cua de delay, acabem amb el bucle
+	mov r7, #4
+	mul r7, r6, r7
+	ldr r7, [r5, r7]
+	and r7, #0xFF000000
+	lsr r7, #24
+
+	ldr r0, =l_B
+	add r1, r7, #4
+	mov r2, #26
+	mov r3, #0
+	bl _gs_escribirStringSub
+		
+	add r6, #1
+	b .LCuaBlk
+	
+.LFiCuaBlk:
+
+	pop {r0-r7,pc}
 
 .end
 
