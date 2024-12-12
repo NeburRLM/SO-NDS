@@ -15,6 +15,41 @@ extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
 const short divFreq1 = -33513982/(1024*7);		// frecuencia de TIMER1 = 7 Hz
 
+extern volatile uint32_t _gd_qDelay[16]; 		// cua de delay
+extern volatile uint8_t _gd_nDelay;     		// número de zócalos en delay
+
+
+/* gestionSincronismos:	aquesta funció de prova afegeix un número de sòcol a la cua de retard (_gd_qDelay). 
+						El número de sòcol s'empaqueta en els 8 bits més alts d'un valor de 32 bits, amb els 
+						24 bits restants a zero. També actualitza la variable global _gd_nDelay per reflectir 
+						el nombre actual de sòcols a la cua.
+						*Aquesta funció només es fa servir per simular el funcionament dels processos que estan 
+						en delay, i així, comprovar el funcionament de la RSI del timer 1 (no s'utilitzarà mai 
+						de manera operativa, només artificialment).*
+*/
+void afegir_delay(uint8_t socket_number) {
+    // Verifiquem que el número de sòcol està dins del rang vàlid (0-15)
+    if (socket_number > 15) {
+        return; // Número de sòcol invàlid
+    }
+
+    // Empaquetem el número de sòcol als 8 bits més alts i posem els 24 bits restants a 0
+    uint32_t packed_value = (socket_number << 24); // Desplacem el número de sòcol als 8 bits més alts
+
+    // Recorrem la cua per trobar una posició lliure
+    for (int i = 0; i < 16; i++) {
+        if (_gd_qDelay[i] == 0) { // Si la posició està buida
+            _gd_qDelay[i] = packed_value; // Emmagatzemem el valor empaquetat
+            
+			 _gd_nDelay++; // Incrementem el nombre de sòcols a la cua de retard
+			
+			return; // Finalitzem
+        }
+    }
+
+    // Cua plena
+}
+
 
 
 /* gestionSincronismos:	función para detectar cuándo un proceso ha terminado
@@ -287,7 +322,16 @@ int main(int argc, char **argv) {
 	_gg_escribir("*                              *", 0, 0, 0);
 	_gg_escribir("********************************", 0, 0, 0);
 	_gg_escribir("*** Inicio fase 2 / ProgM\n", 0, 0, 0);
+	
+	// Inicializamos la cola a 0
+    for (int i = 0; i < 16; i++) {
+        _gd_qDelay[i] = 0;
+    }
 
+    // Afegim un número de zócalo a la cua de delay 
+    afegir_delay(9);
+	afegir_delay(8);
+	
 	if (test0())
 	{
 		test1();

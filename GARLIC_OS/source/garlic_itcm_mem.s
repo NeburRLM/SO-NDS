@@ -315,65 +315,61 @@ _gm_liberarMem:
 _gm_rsiTIMER1:
 	push {r0-r7,lr}
 	
-	ldr r1, =_gd_pidz		@; número de zócalos a RUN
-	ldr r4, [r1]
-		
-	and r4, #0xF
-	bl _gs_representarPilas
-			
-	ldr r0, =l_R
-	add r1, r4, #4
-	mov r2, #26
-	mov r3, #1
-	bl _gs_escribirStringSub
-		
-	ldr r1, =_gd_nReady		@; número de zócalos a la cua de ready
-	ldrb r4, [r1]			@; valor del número de zócalos a la cua de ready 
-		
-	ldr r5, =_gd_qReady		@; cua de ready
-	mov r6, #0				@; contador bucle
-		
+	ldr r1, =_gd_pidz												@; carreguem la @ del PID + número de zócalo que està a RUN
+	ldr r4, [r1]													@; carreguem el valor de la @ anterior	
+	and r4, #0xF													@; obtenim el valor del zócalo (and per quedar-nos amb els 4 bits més baixos, ja que els 28b alts son del PID)			
+	bl _gs_representarPilas											@; representem les piles
+	
+	ldr r0, =l_R													@; carreguem la @ de la lletra R (RUN)
+	add r1, r4, #4													@; careguem la fila específica segons el zócalo
+	mov r2, #26														@; carreguem la columna específica dels estats
+	mov r3, #1														@; color blau per a RUN
+	bl _gs_escribirStringSub										@; cridem a la rutina addicional per escriure la lletra
+	
+	ldr r1, =_gd_nReady												@; carreguem la @ dels números de zócalos que es troben a la cua de ready
+	ldrb r4, [r1]													@; carreguem el valor de la @ anterior	
+	ldr r5, =_gd_qReady												@; carreguem la @ de la cua de ready
+	mov r6, #0														@; iniciem el contador de bucle a 0 per fer el tractament de la cua de ready
+	
 .LCuaRdy:
-	cmp r4, r6				@; comparem valors
-	beq .LFiCuaRdy			@; si ja hem tractat tots els zócalos de la cua de ready, acabem amb el bucle
-	ldrb r7, [r5, r6]		@; sinò, carreguem el valor del zócalo de la cua de ready
-
-	ldr r0, =l_Y
-	add r1, r7, #4
-	mov r2, #26
-	mov r3, #0
-	bl _gs_escribirStringSub
-
-	bl _gs_representarPilas
+	cmp r4, r6														@; comparem si ja s'han tractats tots els zócalos de la cua de ready
+	beq .LFiCuaRdy													@; si és així, acabem amb el bucle
+	ldrb r7, [r5, r6]												@; sinò, carreguem el valor del zócalo de la cua de ready segons el contador del bucle
 	
-	add r6, #1
-	b .LCuaRdy
+	ldr r0, =l_Y													@; carreguem la @ de la lletra Y (READY)
+	add r1, r7, #4													@; careguem la fila específica segons el zócalo 
+	mov r2, #26														@; carreguem la columna específica dels estats
+	mov r3, #0														@; color blanc per a READY
+	bl _gs_escribirStringSub										@; cridem a la rutina addicional per escriure la lletra
+
+	bl _gs_representarPilas											@; representem les piles
 	
-.LFiCuaRdy:
-		
-	ldr r1, =_gd_nDelay		@; número de zócalos a la cua de delay
-	ldrb r4, [r1]			@; valor del número de zócalos a la cua de delay 
-		
-	ldr r5, =_gd_qDelay		@; cua de delay
-	mov r6, #0				@; contador bucle
-		
+	add r6, #1														@; incrementem el contador del bucle per seguir amb el tractament de la cua de ready
+	b .LCuaRdy														@; tornem a fer els mateixos passos per a la cua de ready per al següent zócalo
+	
+.LFiCuaRdy:	
+	ldr r1, =_gd_nDelay												@; carreguem la @ dels números de zócalos que es troben a la cua de delay
+	ldrb r4, [r1]													@; carreguem el valor de la @ anterior	
+	ldr r5, =_gd_qDelay												@; carreguem la @ de la cua de delay
+	mov r6, #0														@; iniciem el contador de bucle a 0 per fer el tractament de la cua de delay
+	
 .LCuaBlk:
-	cmp r4, r6				@; comparem valors
-	beq .LFiCuaBlk			@; si ja hem tractat tots els zócalos de la cua de delay, acabem amb el bucle
-	mov r7, #4
-	mul r7, r6, r7
-	ldr r7, [r5, r7]
-	and r7, #0xFF000000
-	lsr r7, #24
+	cmp r4, r6														@; comparem si ja s'han tractats tots els zócalos de la cua de delay
+	beq .LFiCuaBlk													@; si és així, acabem amb el bucle
+	mov r7, #4														@; tamany de cada entrada
+	mul r7, r6, r7													@; calculem la @ de desplaçament de la cua per accedir al zócalo corresponent de la cua de delay
+	ldr r7, [r5, r7]												@; carreguem el valor de la @ anterior						
+	and r7, #0xFF000000												@; obtenim el valor del zócalo (and per quedar-nos amb els 8 bits més alts, ja que els 24b baixos son dels ticks)		 
+	lsr r7, #24														@; apliquem un desplaçament dels 8 bits més alts cap a la dreta 24 posicions per quedar-nos únicament amb els 8 bits del zócalo
 
-	ldr r0, =l_B
-	add r1, r7, #4
-	mov r2, #26
-	mov r3, #0
-	bl _gs_escribirStringSub
+	ldr r0, =l_B													@; carreguem la @ de la lletra B (BLOCKED)
+	add r1, r7, #4													@; careguem la fila específica segons el zócalo
+	mov r2, #26														@; carreguem la columna específica dels estats
+	mov r3, #0														@; color blanc per a BLOCKED
+	bl _gs_escribirStringSub										@; cridem a la rutina addicional per escriure la lletra
 		
-	add r6, #1
-	b .LCuaBlk
+	add r6, #1														@; incrementem el contador del bucle per seguir amb el tractament de la cua de delay
+	b .LCuaBlk														@; tornem a fer els mateixos passos per a la cua de delay per al següent zócalo
 	
 .LFiCuaBlk:
 
