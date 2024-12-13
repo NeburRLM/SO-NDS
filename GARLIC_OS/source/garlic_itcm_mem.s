@@ -23,6 +23,7 @@ INI_MEM_PROC = 0x01002000
 	l_R: .asciz "R"
 	l_Y: .asciz "Y"
 	l_B: .asciz "B"
+	l_S: .asciz "S"
 
 .section .itcm,"ax",%progbits
 
@@ -359,15 +360,33 @@ _gm_rsiTIMER1:
 	mov r7, #4														@; tamany de cada entrada
 	mul r7, r6, r7													@; calculem la @ de desplaçament de la cua per accedir al zócalo corresponent de la cua de delay
 	ldr r7, [r5, r7]												@; carreguem el valor de la @ anterior						
+	
+	mov r0, r7                                                      @; fem una còpia del valor complet per a la següent comprovació
+	ldr r1, =0x00FFFFFF         									@; carreguem la constant dels 24 bits més baixos en r1
+	and r0, r0, r1              									@; comprovem els 24 bits més baixos
+	cmp r0, r1                  									@; @; comparem si tots els 24 bits més baixos són 1
+	bne .LRepresentarB
+	
+	@; Si els 24 bits més baixos són tots 1, representem una S
+	and r7, #0xFF000000                                             @; obtenim el valor del zócalo (and per quedar-nos amb els 8 bits més alts)
+	lsr r7, #24                                                     @; apliquem un desplaçament per quedar-nos únicament amb els 8 bits del zócalo
+	ldr r0, =l_S                                                    @; carreguem la @ de la lletra S (SEMAFOR)
+	add r1, r7, #4                                                  @; carreguem la fila específica segons el zócalo
+	mov r2, #26                                                     @; carreguem la columna específica dels estats
+	mov r3, #0                                                      @; color blanc per a SEMAFOR
+	bl _gs_escribirStringSub                                        @; cridem a la rutina addicional per escriure la lletra
+	b .LPostRepresent
+	
+.LRepresentarB:                                                  	@; Si no són tots 1, representem una B	
 	and r7, #0xFF000000												@; obtenim el valor del zócalo (and per quedar-nos amb els 8 bits més alts, ja que els 24b baixos son dels ticks)		 
 	lsr r7, #24														@; apliquem un desplaçament dels 8 bits més alts cap a la dreta 24 posicions per quedar-nos únicament amb els 8 bits del zócalo
-
 	ldr r0, =l_B													@; carreguem la @ de la lletra B (BLOCKED)
 	add r1, r7, #4													@; careguem la fila específica segons el zócalo
 	mov r2, #26														@; carreguem la columna específica dels estats
 	mov r3, #0														@; color blanc per a BLOCKED
 	bl _gs_escribirStringSub										@; cridem a la rutina addicional per escriure la lletra
-		
+
+.LPostRepresent:		
 	add r6, #1														@; incrementem el contador del bucle per seguir amb el tractament de la cua de delay
 	b .LCuaBlk														@; tornem a fer els mateixos passos per a la cua de delay per al següent zócalo
 	
