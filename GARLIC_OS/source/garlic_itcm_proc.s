@@ -76,6 +76,7 @@ _gp_rsiVBL:
 		str r5, [r4]
 		
 		@;incremento de workTicks
+		bl _gp_inhibirIRQs
 		ldr r4, =_gd_pidz
 		ldr r4, [r4]
 		mov r5, #0xF
@@ -90,7 +91,8 @@ _gp_rsiVBL:
 		add r6, #1				@;incrementamos los workTicks
 		orr r5, r4, r6
 		str	r5, [r7, #20]
-
+		bl _gp_desinhibirIRQs
+		
 		bl _gp_actualizarDelay
 		
 		@; miramos si hay algun proceso en la cola de ready
@@ -347,6 +349,7 @@ _gp_actualizarDelay:
 		beq .LfiDecrementar
 		ldr r4, [r0, r3]
 		ldr r11, =0xFFFFFF
+		and r4, r4, r11
 		tst r4, r11				@; si tots els bits estan a 1 significa que el proces esta a la cua de delay per un bloqueig d'un semafor
 		addne r3, #1
 		bne .Ldecrementar
@@ -661,6 +664,7 @@ _gp_rsiTIMER0:
 	mov r10, #24
 	mov r11, #0
 	mov r5, #0
+	mov r8, #0xFFFFFF
 	.Lsuma:
 		cmp r11, #15
 		movgt r11, #0
@@ -671,6 +675,7 @@ _gp_rsiTIMER0:
 		beq .LesSO
 		.LaccWork:
 			ldr r4, [r3, #20]	@; accedemos a los workticks
+			and r4, r4, r8
 			add r5, r4			@; guardamos el total de los procesos
 			add r11, #1
 			b .Lsuma
@@ -690,8 +695,12 @@ _gp_rsiTIMER0:
 		.LsegPerc:
 			ldr r4, [r3, #20]
 			mov r7, #100
+			mov r8, #0xFFFFFF
+			and r4, r4, r8
 			mul r4, r7
 			mov r0, r4
+			cmp r5, #0					@; comprobamos que el total de workticks no es 0
+			beq .Lerror
 			mov r1, r5
 			ldr r2, =_gd_quo
 			ldr r3, =_gd_mod
@@ -699,9 +708,9 @@ _gp_rsiTIMER0:
 			ldr r2, [r2]
 			ldr r3, [r3]
 			mov r8, #0
-			and r4, r4, r8			@; ponemos a 0 los workticks
-			mov r8, r2
-			mov r8, r8, lsr #8		@; ponemos el porcentage en los 8 bits altos
+			@;and r4, r4, r8			@; ponemos a 0 los workticks
+			mov r8, r2, lsl #24		@; ponemos el porcentage en los 8 bits altos
+			mla r3, r10, r11, r9
 			str r8, [r3, #20]		@; guardamos en workticks
 			@; pasar el porcentaje a string
 			ldr r0, =_gd_perc
@@ -731,6 +740,7 @@ _gp_rsiTIMER0:
 		mov r2, #1
 		orr r3, r1, r2
 		str r3, [r0]
+	.Lerror:
 	pop {r0-r11, pc}
 
 .end

@@ -67,6 +67,7 @@ void inicializarSistema() {
 int main(int argc, char **argv) {
 //------------------------------------------------------------------------------
 	intFunc start;
+	intFunc start2;
 	int mtics, v;
 
 	inicializarSistema();
@@ -80,11 +81,13 @@ int main(int argc, char **argv) {
 	
 	_gg_escribir("*** Carga de programa HOLA.elf\n", 0, 0, 0);
 	start = _gm_cargarPrograma("HOLA");
+	start2 = _gm_cargarPrograma("DIV1");
 	if (start)
 	{	
 		_gp_crearProc(start, 1, "HOLA", 3);
 		_gp_crearProc(start, 2, "HOLA", 3);
-		_gp_crearProc(start, 3, "HOLA", 3);
+		if (start2)
+			_gp_crearProc(start2, 3, "DIV1", 3);
 		
 		while (_gd_tickCount < 240)			// esperar 4 segundos
 		{
@@ -114,7 +117,7 @@ int main(int argc, char **argv) {
 		_gg_escribir("*** Programa NO cargado\n", 0, 0, 0);
 
 
-	_gg_escribir("*** Carga de programa PONG.elf\n", 0, 0, 0);
+	/*_gg_escribir("*** Carga de programa PONG.elf\n", 0, 0, 0);
 	start = _gm_cargarPrograma("PONG");
 	if (start)
 	{
@@ -144,7 +147,7 @@ int main(int argc, char **argv) {
 		}
 		
 	} else
-		_gg_escribir("*** Programa NO cargado\n", 0, 0, 0);
+		_gg_escribir("*** Programa NO cargado\n", 0, 0, 0);*/
 
 
 	_gg_escribir("*** Final fase 2_P\n", 0, 0, 0);
