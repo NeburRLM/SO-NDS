@@ -335,56 +335,68 @@ _gp_restaurarProc:
 	@; Rutina para actualizar la cola de procesos retardados, poniendo en
 	@; cola de READY aquellos cuyo número de tics de retardo sea 0
 _gp_actualizarDelay:
-	push {r0-r11, lr}
+	push {r0-r9, lr}
 	ldr r0, =_gd_qDelay
 	ldr r1, =_gd_nDelay
 	ldr r2, [r1]
-	ldr r5, =_gd_qReady
-	ldr r6, =_gd_nReady
-	ldr r7, [r6]
-	ldr r8, =_gd_pcbs
 	mov r3, #0
-	.Ldecrementar:
-		cmp r3, r2
-		beq .LfiDecrementar
-		ldr r4, [r0, r3]
-		ldr r11, =0xFFFFFF
-		and r4, r4, r11
-		tst r4, r11				@; si tots els bits estan a 1 significa que el proces esta a la cua de delay per un bloqueig d'un semafor
-		addne r3, #1
-		bne .Ldecrementar
-		sub r4, #1
-		ldr r11, =0xFFFF
-		tst r4, r11				@; mirem si ja ha arribat a 0
-		beq .LaReady
-		str r4, [r0, r3]		@; sino guardem amb el decrement
-		add r3, #1
-		b .Ldecrementar
-	.LaReady:
-		mov r4, r4, lsl #8		@; posem el zocalo als 4 bits baixos
-		str r4, [r5, r6]		@; guardem el proces a la cua de ready
-		add r7, #1
-		str r7, [r6]			@; incrementem el numero de procesos a la cua de ready
-		sub r2, #1				@; restem el proces a la cua de delay
+	cmp r2, r3				@; si no hay procesos en la cola de delay terminamos la funcion
+	beq .LfiActDel
+	mov r4, #0				@; usaremos r4 como contador de procesos ya decrementados y r3 como desplazamiento
+	.LdecrTic:
+		cmp r4, r2
+		beq .LfiActDel		@; cuando hayamos visto todos los procesos terminamos
+		ldr r5, [r0, r3]	@; cargamos el valor de la cola de delay
+		ldr r6, =0xFFFFFF	@; mascara para coger los 24 bits bajos
+		and r7, r5, r6
+		cmp r7, r6			@; si los 24 bits estan a 1 significa que es bloqueo por semaforo
+		addeq r3, #4		@; añadimos 4 porque son int's
+		addeq r4, #1
+		beq .LdecrTic
+		sub r5, #1			@; restamos 1 tic
+		sub r7, #1			@; restamos el tic tambien al registro auxiliar
+		ldr r6, =0xFFFF		@; mascara para mirar los 16 bits bajos
+		tst r7, r6
+		beq .LcamReady
+		str r5, [r0, r3]	@; guardamos el valor decrementado
+		add r3, #4
+		add r4, #1
+		b .LdecrTic
+		
+	.LcamReady:
+		mov r5, r5, lsr #24	@; ponemos el zocalo en los 8 bits bajos
+		ldr r7, =_gd_qReady
+		ldr r8, =_gd_nReady
+		ldr r9, [r8]
+		bl _gp_inhibirIRQs
+		str r5, [r7, r9]	@; guardamos el zocalo en la cola de Ready
+		add r9, #1			@; incrementamos en 1 el numero de procesos en la cola de Ready
+		str r9, [r8]
+		sub r2, #1			@; restamos en 1 el numero de procesos en la cola de Delay
 		str r2, [r1]
-		ldr r9, [r8, r4]
-		mov r9, r9, lsl #1		@; canveim el bit mes alt del pid per posarlo a 0 i que ja no sigui ignorat
-		mov r10, #0
-		and r9, r9, r10
-		mov r9, r9, lsr #1
-		str r9, [r8, r4]
-		mov r11, r3
-		.LiniMovD:
-			cmp r11, r2
-			beq .Ldecrementar	@; quan ja els em mogut tots seguim decrementan
-			add r11, #1
-			ldr r4, [r0, r11]
-			sub r11, #1
-			str r4, [r0, r11]
-			add r11, #1
-			b .LiniMovD
-	.LfiDecrementar:
-	pop {r0-r11, pc}
+		ldr r7, =_gd_pcbs
+		ldr r8, [r7, r5]	@; cargamos el pid del zocalo correspondiente
+		ldr r9, =0x7FFFFFFF
+		and r8, r8, r9      @; ponemos el bit mas alto en 0 para que salvar contexto 
+		str r8, [r7, r5]
+		mov r7, r3			@; auxiliar del desplazamiento
+		
+		.LmovDel:			@; bucle para avanzar una posicion el resto de valores de la cola de Delay
+			cmp r7, r2
+			beq .LfiMovDel
+			add r7, #4
+			ldr r8, [r0, r7]
+			sub r7, #4
+			str r8, [r0, r7]
+			add r7, #4
+			b .LmovDel
+		
+		.LfiMovDel:	
+			bl _gp_desinhibirIRQs
+			b .LdecrTic
+	
+	.LfiActDel:
+	pop {r0-r9, pc}
 
 
 	.global _gp_numProc
@@ -610,7 +622,7 @@ _gp_retardarProc:
 	ldr r4, [r1]
 	and r4, r4, #0xf	@; cogemos el numero de zocalo del proceso actual
 	orr r3, r3, r4		@; añadimos el num. de zocalo
-	mov r3, r3, lsr #8	@; ponemos el zocalo en los 8 bits altos
+	mov r3, r3, lsl #24	@; ponemos el zocalo en los 8 bits altos
 	orr r3, r3, r2		@; añadimos los tics
 	ldr r5, =_gd_qDelay
 	ldr r6, =_gd_nDelay
@@ -619,11 +631,9 @@ _gp_retardarProc:
 	str r3, [r5, r7]	@; añadimos en la cola el word creado
 	add r7, #1
 	str r7, [r6]		@; incrementamos el numero de procesos en delay
-	mov r4, r4, lsl #1
-	mov r5, #1
-	orr r4, r4, r5
-	mov r4, r4, lsr #1	@; ponemos el bit mas alto a 1
-	str r4, [r1]		@; guardamos el nuevo pidz
+	ldr r4, [r1]
+	orr r4, r4, #(1 << 31)	@; ponemos el bit mas alto a 1
+	str r4, [r1]			@; guardamos el nuevo pidz
 	bl _gp_desinhibirIRQs
 	bl _gp_WaitForVBlank	@; invocamos a la nueva rutina
 	pop {r1-r7, pc}			@; no retornará hasta que se haya agotado el retardo

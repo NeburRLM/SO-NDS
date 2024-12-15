@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
 	_gg_escribir("********************************", 0, 0, 0);
 	_gg_escribir("*** Inicio fase 2_P\n", 0, 0, 0);
 	
-	_gg_escribir("*** Carga de programa HOLA.elf\n", 0, 0, 0);
+	/*_gg_escribir("*** Carga de programa HOLA.elf\n", 0, 0, 0);
 	start = _gm_cargarPrograma("HOLA");
 	start2 = _gm_cargarPrograma("DIV1");
 	if (start)
@@ -114,10 +114,10 @@ int main(int argc, char **argv) {
 		}
 		_gg_escribir("Proceso 2 terminado\n", 0, 0, 0);
 	} else
-		_gg_escribir("*** Programa NO cargado\n", 0, 0, 0);
+		_gg_escribir("*** Programa NO cargado\n", 0, 0, 0);*/
 
 
-	/*_gg_escribir("*** Carga de programa PONG.elf\n", 0, 0, 0);
+	_gg_escribir("*** Carga de programa PONG.elf\n", 0, 0, 0);
 	start = _gm_cargarPrograma("PONG");
 	if (start)
 	{
@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
 		}
 		
 	} else
-		_gg_escribir("*** Programa NO cargado\n", 0, 0, 0);*/
+		_gg_escribir("*** Programa NO cargado\n", 0, 0, 0);
 
 
 	_gg_escribir("*** Final fase 2_P\n", 0, 0, 0);
