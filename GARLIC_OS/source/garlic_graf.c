@@ -79,7 +79,7 @@ unsigned char normalitzarChar(unsigned char c)
 /* _gg_generarMarco: dibuja el marco de la ventana que se indica por par�metro*/
 void _gg_generarMarco(int v, int color)
 {
-	color *= 128;	// Color * 128 per despl. al conjunt de baldoses del color X
+	color *= 128;	// Color * 128 per despl. a l'index corresponent al color X del conjunt de baldoses
 
 	/* Calcular fila (Fv) i columna (Cv) inicial per cada finestra
 	 * Exemple: (v=3) 
@@ -339,6 +339,8 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 	int charPndt = pControl & 0xFFFF;			// Comptador de caracters fins emplenar el buffer (0,32) (16b)
 	int numLinea = pControl >> 16;				// Comptador sobre el numero de fila/linea actual (0,23) (16b)
 	
+	char color = _gd_wbfs[ventana].pControl >> 28;	// Agafar valor de color emmagatzemat al buffer WBFS
+	
 	// Convertir el string de format a text definitiu
 	_gg_procesarFormato(formato, val1, val2, resultat);
 	
@@ -384,7 +386,12 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		}
 		else	/* Altres casos */
 		{
-			if(charActual == '\t')	/* Cas tabulador */
+			if (charActual == '%' && resultat[i + 1] >= '0' && resultat[i + 1] <= '3') /* Cas marca de color */
+			{
+				color = resultat[i + 1] - '0';  // Actualitzar color actual - 0 (valor ASCII = 48)
+				i++; // Saltar al seguent caracter, ja s'ha llegit i + i+1
+			}
+			else if(charActual == '\t')	/* Cas tabulador */
 			{
 				// Calcular espais necessaris
 				int tab = 4 - (charPndt % 4);
@@ -396,18 +403,18 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 			}
 			else if(charActual >= '\x80' && charActual <= '\xFF')	/* Cas caracter custom (128-255 en hexa) */
 			{
-				_gd_wbfs[ventana].pChars[charPndt++] = charActual;	// Guardar custom char
+				_gd_wbfs[ventana].pChars[charPndt++] = charActual + 128 * color;	// Guardar custom char
 			}
 			else	/* Cas caracter literal */
 			{
-				_gd_wbfs[ventana].pChars[charPndt++] = charActual - 32;
+				_gd_wbfs[ventana].pChars[charPndt++] = (charActual - 32) + 128 * color;
 			}
 		}
-		// Actualitzar variable pControl amb la linea actual i charPndt
-		_gd_wbfs[ventana].pControl = (numLinea << 16) | charPndt;
+		// Actualitzar variable pControl
+		_gd_wbfs[ventana].pControl = (color << 28) | (numLinea << 16) | charPndt;	// Color: 31..28 | numLinea 27..16 | charPndt 15..0
 		i++;
 	}
-	_gd_wbfs[ventana].pControl = (numLinea << 16) | charPndt;
+	_gd_wbfs[ventana].pControl = (color << 28) | (numLinea << 16) | charPndt;
 }
 
 

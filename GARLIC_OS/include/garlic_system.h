@@ -68,11 +68,12 @@ extern garlicPCB _gd_pcbs[16];	// vector de PCBs de los procesos activos
 
 typedef struct				// Estructura del buffer de una ventana
 {							// (WBUF: Window BUFfer)
-	int pControl;			//	control de escritura en ventana
-							//		16 bits altos: n�mero de l�nea (0..23)
-							//		16 bits bajos: caracteres pendientes (0..32)
-	short pChars[32];		//	vector de 32 caracteres pendientes de escritura
-							//		indicando el c�digo ASCII de cada posici�n
+	int pControl;			// control de escritura en ventana
+							// 4 bits altos: cód. color actual (0..3)
+							// 12 bits medios: número de línea (0..23) --- (ANTERIOR) 16 bits altos: numero de linea (0..23)
+							// 16 bits bajos: caracteres pendientes (0..32)
+	short pChars[32];		// vector de 32 caracteres pendientes de escritura
+							// indicando el codigo ASCII de cada posici�n
 } PACKED garlicWBUF;
 
 extern garlicWBUF _gd_wbfs[16];	// vector con los buffers de 16 ventanas
