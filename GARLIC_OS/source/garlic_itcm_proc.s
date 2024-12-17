@@ -76,7 +76,7 @@ _gp_rsiVBL:
 		str r5, [r4]
 		
 		@;incremento de workTicks
-		bl _gp_inhibirIRQs
+		@;bl _gp_inhibirIRQs
 		ldr r4, =_gd_pidz
 		ldr r4, [r4]
 		mov r5, #0xF
@@ -91,7 +91,7 @@ _gp_rsiVBL:
 		add r6, #1				@;incrementamos los workTicks
 		orr r5, r4, r6
 		str	r5, [r7, #20]
-		bl _gp_desinhibirIRQs
+		@;bl _gp_desinhibirIRQs
 		
 		bl _gp_actualizarDelay
 		
@@ -136,12 +136,9 @@ _gp_salvarProc:
 	push {r8-r11, lr}
 		@; miramos si el proceso debe ir a la cola de Delay o a la de Ready
 		ldr r8, [r6]
-		mov r8, r8, lsl #1
-		ands r9, r8, #1			@; si el bit no es 1 entonces lo trataremos como un proceso sin delay, pero si es 1 lo trataremos con delay
-		movne r8, r8, lsr #1
+		tst r8, #0x80000000
 		beq .LesReady
-		mov r8, r8, lsl #8		@; ponemos en los 8 bits bajos el numero de zocalo
-		and r8, #0xF			@; cogemos solo el numero de zocalo
+		and r8, r8, #0xF			@; cogemos solo el numero de zocalo
 		b .LsaltarR
 		
 		@; guardamos el numero de zocalo en la ultima posición de la cola de ready
@@ -372,6 +369,7 @@ _gp_actualizarDelay:
 		str r5, [r7, r9]	@; guardamos el zocalo en la cola de Ready
 		add r9, #1			@; incrementamos en 1 el numero de procesos en la cola de Ready
 		str r9, [r8]
+		mov r8, #0
 		sub r2, #1			@; restamos en 1 el numero de procesos en la cola de Delay
 		str r2, [r1]
 		ldr r7, =_gd_pcbs
@@ -380,18 +378,22 @@ _gp_actualizarDelay:
 		and r8, r8, r9      @; ponemos el bit mas alto en 0 para que salvar contexto 
 		str r8, [r7, r5]
 		mov r7, r3			@; auxiliar del desplazamiento
+		mov r9, r4			@; auxiliar del numero de procesos
 		
 		.LmovDel:			@; bucle para avanzar una posicion el resto de valores de la cola de Delay
-			cmp r7, r2
+			cmp r9, r2
 			beq .LfiMovDel
 			add r7, #4
 			ldr r8, [r0, r7]
 			sub r7, #4
 			str r8, [r0, r7]
 			add r7, #4
+			add r9, #1
 			b .LmovDel
 		
-		.LfiMovDel:	
+		.LfiMovDel:
+			mov r8, #0
+			str r8, [r0, r7]
 			bl _gp_desinhibirIRQs
 			b .LdecrTic
 	
@@ -627,8 +629,10 @@ _gp_retardarProc:
 	ldr r5, =_gd_qDelay
 	ldr r6, =_gd_nDelay
 	ldr r7, [r6]
+	mov r8, #4
+	mul r9, r7, r8
 	bl _gp_inhibirIRQs	@; inhibimos las IRQ porque si añadimos el proceso en la cola de delay sera necesario tambien aumentar el numero de procesos en la cola de delay para que no haya incoherencias y indicamos en el pidz que el proceso esta en la cola de delay
-	str r3, [r5, r7]	@; añadimos en la cola el word creado
+	str r3, [r5, r9]	@; añadimos en la cola el word creado
 	add r7, #1
 	str r7, [r6]		@; incrementamos el numero de procesos en delay
 	ldr r4, [r1]
