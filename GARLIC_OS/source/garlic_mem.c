@@ -15,6 +15,24 @@
 #include "garlic_system.h"	// definición de funciones y variables de sistema
 #include <elf.h> 
 
+#define MAX_FILES 10
+#define FILE_SIZE 65536  // 64 KB
+
+extern int _gd_pidz;
+
+typedef struct {
+    char name[6];       // "fileX", on X es el número del fitxer
+    char *data;         // Punter a les dades del fitxer
+    size_t size;        // Mida de les dades vàlides
+    size_t pos;         // Punter (posició) de lectura/escriptura
+	char is_open;     	// Indicador de si el fitxer està obert
+	int proces;
+	char* mode;
+} File;
+
+// Array para almacenar hasta 10 ficheros
+File files[MAX_FILES];
+
 int _gm_primeraPosMem = INI_MEM;
 
 /* _gm_initFS: inicializa el sistema de ficheros, devolviendo un valor booleano
@@ -87,26 +105,185 @@ Elf32_Word ferMultiple(Elf32_Word tSeg)
 
 
 
+// Función para abrir un archivo cargado en memoria
 FILE* _gm_fopen(const char* filename, const char* mode)
 {
-	char path[22]; //"Datos/filename"
-	sprintf(path, "/Datos/%s", filename); 
+    int index = filename[4] - '0';  // Obtener el número del archivo ("fileX")
+    if (index < 0 || index >= MAX_FILES) 
+	{
+        return NULL;  // Fuera del rango de archivos permitidos
+    }
+
+    // Verificar si el archivo ya está cargado (ya está en memoria)
+    if (files[index].data == NULL) 
+	{
+        return NULL;  // Si no se pudo cargar el archivo
+    }
 	
-	return fopen(path, mode); 
+	// Verificar si el archivo ya está abierto
+    if (files[index].is_open) 
+	{
+        return NULL;  // El archivo ya está siendo usado
+    }
+	
+	
+	if (strcmp(mode, "w") != 0 && strcmp(mode, "a") != 0) 
+    {
+        return NULL;  // Modo inválido
+    }
+    if (strcmp(mode, "w") == 0) 
+    {
+		files[index].mode = "w";
+	}
+	else if (strcmp(mode, "a") == 0)
+	{
+		files[index].mode = "a";
+	}
+	
+	// Marcar el archivo como abierto y devolver el puntero
+    files[index].is_open = 1;
+	files[index].proces = _gd_pidz;
+    files[index].pos = 0;  // Reiniciar la posición
+	
+    // Devolver el archivo cargado en memoria
+    return (FILE*)&files[index]; 
 }
 
-
-size_t _gm_fread(void * buffer, size_t size, size_t numele, FILE * file)
+// Funció per llegir dades del fitxer carregat a la memòria
+size_t _gm_fread(void *buffer, size_t size, size_t numele, FILE *file)
 {
-	return fread(buffer, size, numele, file); 
+    File *f = (File*)file;
+    size_t bytesToRead = size * numele;
+	
+	// Verificar que el archivo está abierto y que el proceso actual es el propietario
+    if (f->is_open && f->proces == _gd_pidz) 
+    {
+		// Si la posició està al final del fitxer, restablim a 0 (llegir des del principi)
+		//if (f->pos >= f->size) 
+		//{
+			f->pos = 0;  // Restableix la posició si ja no hi ha més dades
+		//}
+
+		// Assegura't de no llegir més enllà de la mida del fitxer
+		if (f->pos + bytesToRead > f->size) 
+		{
+			bytesToRead = f->size - f->pos;  // Llegir només fins al final del fitxer
+		}
+
+		if (bytesToRead > 0) {
+			memcpy(buffer, f->data + f->pos, bytesToRead);  // Copia les dades al buffer
+			f->pos += bytesToRead;  // Actualitza la posició després de la lectura
+		}
+	}
+	else
+	{
+		bytesToRead = 0;
+	}
+
+    return bytesToRead;  // Retorna els bytes llegits (pot ser 0 si no hi ha més dades)
 }
 
-
-int _gm_fclose(FILE * file)
+// Funció per escriure dades al fitxer carregat a la memòria
+size_t _gm_fwrite(const void *buffer, size_t size, size_t num, FILE *file) 
 {
-	return fclose(file);  
+    File *f = (File*)file;
+    size_t bytesToWrite = size * num;
+
+    // Verificar que el archivo está abierto y que el proceso actual es el propietario
+    if (f->is_open && f->proces == _gd_pidz) 
+    {
+		
+		// Manejamos el modo "a" (append) para empezar desde el final del contenido
+		if (strcmp(f->mode, "a") == 0) 
+		{
+			f->pos = f->size; // Colocar la posición al final del archivo
+		}
+		// Manejamos el modo "w" (write) para sobrescribir desde el inicio
+		else if (strcmp(f->mode, "w") == 0) 
+		{
+			f->pos = 0;     // Restablecer la posición al inicio
+			f->size = 0;    // Vaciar el contenido actual
+			memset(f->data, 0, FILE_SIZE);
+		}
+		
+		
+		// No excedir la mida màxima del fitxer
+		if (f->pos + bytesToWrite > FILE_SIZE) 
+		{
+			//bytesToWrite = FILE_SIZE - f->pos;
+			bytesToWrite = 0;
+		}
+		else
+		{	
+			// Escriure les dades al fitxer
+			memcpy(f->data + f->pos, buffer, bytesToWrite);
+			f->pos += bytesToWrite;
+			
+			// Actualitzar la mida del fitxer si és necessari
+			if (f->pos > f->size) 
+			{
+				f->size = f->pos;
+			}
+		}
+	}
+	else
+	{
+		bytesToWrite = 0;
+	}
+    return bytesToWrite;  // Retorna els bytes escrits
 }
 
+// Funció per tancar el fitxer carregat a la memòria
+int _gm_fclose(FILE *file)
+{
+    File *f = (File*)file;
+    if (f == NULL) 
+	{
+        return -1;  // Error: puntero inválido
+    }
+
+    f->is_open = 0;	// Marcar el archivo como cerrado
+	f->proces = -1;
+    return 0;  // Operació exitosa  
+}
+
+// Funció per carregar els fitxers a la memòria
+void loadFiles() 
+{
+    for (int i = 0; i < MAX_FILES; i++) 
+	{
+        // Inicialitzar el nom del fitxer "fileX"
+        snprintf(files[i].name, sizeof(files[i].name), "file%d", i);
+		
+        // Llegir el contingut del fitxer des de NitroFS (només al principi)
+        char path[13];
+        snprintf(path, sizeof(path), "/Datos/file%d", i);
+		
+        // Fer servir fopen estàndard per accedir al fitxer al sistema de fitxers
+        FILE* f = fopen(path, "rb"); // Utilitzem fopen estàndard per accedir al fitxer
+        if (f != NULL) 
+		{
+            
+			// Assignar memòria dinàmica de 64 KB per als fitxers
+			files[i].data = (char*)malloc(FILE_SIZE);
+			files[i].size = 0;
+			files[i].pos = 0;
+			// Llegir el contingut del fitxer utilitzant fread estàndard
+            size_t bytesRead = fread(files[i].data, 1, FILE_SIZE, f);
+			
+            // Actualitzar la mida del fitxer llegit
+            files[i].size = bytesRead;
+			
+            // Tancar el fitxer després de la lectura
+            fclose(f);
+        } 
+		else 
+		{
+            // Si no es pot obrir el fitxer, deixar la mida a 0 (buit)
+            files[i].size = 0;
+        }
+    }
+}
 
 
 /* _gm_cargarPrograma: busca un fichero de nombre "(keyName).elf" dentro del

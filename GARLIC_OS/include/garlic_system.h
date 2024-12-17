@@ -134,7 +134,7 @@ extern int _gm_initFS();
 				el resultado es un vector de strings (paso por referencia) y
 				el número de programas detectados; */
 extern int _gm_listaProgs(char* progs[]);
-
+extern void loadFiles();
 
 /* _gm_cargarPrograma: busca un fichero de nombre "(keyName).elf" dentro del
 					directorio "/Programas/" del sistema de ficheros y carga

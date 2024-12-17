@@ -294,5 +294,11 @@ _ga_clear:
 	pop {r0-r1, pc}
 
 
+.global _ga_fwrite
+_ga_fwrite:
+	push {lr}
+	bl _gm_fwrite
+	pop {pc}
+
 .end
 

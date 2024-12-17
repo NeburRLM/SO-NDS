@@ -162,6 +162,48 @@ void eliminaProc(unsigned char z)
 }
 
 
+/* testPartAdd:	función para cargar 2 programas de usuario por tal de provar 
+				el funcionamiento de la implementación de las funcionalidades 
+				propias del sistema de ficheros
+*/
+unsigned char testPartAdd()
+{
+	char *expected[2] = {"ORDH", "MEMP"};
+	intFunc start[2];
+	unsigned char i;
+	unsigned char result = 1;
+
+	_gg_escribir("\n** TEST 1: carga consecutiva\n\tORDH i MEMP **\n", 0, 0, 0);
+	for (i = 0; i < 2; i++)
+	{
+		start[i] = _gm_cargarPrograma(i+1, expected[i]);
+	}
+	if (start[0] && start[1])	// verficación de carga
+	{
+		for (i = 0; i < 2; i++)		// se asume que siempre se podrán crear
+		{							// los tres procesos asociados
+			_gp_crearProc(start[i], i+1, expected[i], i);
+		}
+		while (_gp_numProc() > 1)	// espera finalicación de ORDH i MEMP
+		{
+			_gp_WaitForVBlank();
+			gestionSincronismos();
+		}
+		start[1] = _gm_cargarPrograma(3, expected[1]);	// cargamos otra vez el programa MEMP
+		_gp_crearProc(start[1], 3, expected[1], 1);
+		while (_gp_numProc() > 1)	// espera finalicación de MEMP
+		{
+			_gp_WaitForVBlank();
+			gestionSincronismos();
+		}
+	}
+	else
+	{
+		_gg_escribir("\nERROR: algun programa no se ha podido cargar!\n", 0, 0, 0);
+		result = 0;
+	}
+	return result;
+}
 
 
 /* test 0: 	test de obtención de los programas de usuario contenidos en el
@@ -347,6 +389,7 @@ void inicializarSistema()
 int main(int argc, char **argv) {
 //------------------------------------------------------------------------------
 	inicializarSistema();
+	loadFiles();
 	_gg_escribir("********************************", 0, 0, 0);
 	_gg_escribir("*                              *", 0, 0, 0);
 	_gg_escribir("* Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
@@ -354,15 +397,20 @@ int main(int argc, char **argv) {
 	_gg_escribir("********************************", 0, 0, 0);
 	_gg_escribir("*** Inicio fase 2 / ProgM\n", 0, 0, 0);
 	
+	// Función para prueba de funcionalidades addicionales
+	testPartAdd();
+	
 	// Inicialitzem la cua de delay a 0
     for (int i = 0; i < 16; i++) {
         _gd_qDelay[i] = 0;
     }
-
+	
     // Afegim un número de zócalo a la cua de delay 
     afegir_delay(15);
 	afegir_delay(14);
 	afegir_delay_semafor(12);
+	
+	esperaSegundos(10);	// espera para ver más claro el funcionamiento entre prueba y prueba
 	
 	if (test0())
 	{

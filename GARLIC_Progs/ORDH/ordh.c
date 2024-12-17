@@ -26,32 +26,70 @@ int _start(int arg)
 	
 	GARLIC_printf("-- Programa ORDH --\n");
 	
-	//////////////Llegir arxiu de /Datos//////////////
-	GARLIC_printf("\n\n\n#####Llegint fitxer /Datos/#####");
-	// Definir el buffer estàtic de tamany fixe per la lectura de l'arxiu
-    char buffer[64];  	//reducció del tamany per no sobrepassar la pila a la DTCM
+	////////////// Llegir arxiu de /Datos //////////////
+	char nomFile[] = "file1";
+	GARLIC_printf("\n\n\n### Llegint fitxer %s ###\n", nomFile);
 
-    // Obrim l'arxiu per llegir
-    FILE* inf = GARLIC_fopen("file1", "rb");
-	if (inf == 0) {   // Si no s'ha pogut obrir l'arxiu
-        GARLIC_printf("Error al obrir l'arxiu\n");
-        return -1;
-    }
+	// Definir el buffer estàtic de tamany fixe per la lectura de el fitxer
+	char buffer[64];  // Reducció del tamany per no sobrepassar la pila a la DTCM
+
+	// Obrim el fitxer per llegir
+	GARLIC_FILE* inf = GARLIC_fopen(nomFile, "a");
+	if (inf == 0) 
+	{   // Si no s'ha pogut obrir el fitxer
+		GARLIC_printf("Error al obrir el %s\n", nomFile);
+		return -1;
+	}
+	else
+	{
+		GARLIC_printf("#Fitxer %s obert#\n", nomFile);
+	}
+
+	// Llegir el fitxer usant GARLIC_fread, llegint el buffer
+	size_t bytesRead = GARLIC_fread(buffer, 1, sizeof(buffer), inf);
+	if (bytesRead <= 0) 
+	{
+		GARLIC_printf("#Error al llegir el %s\n", nomFile);
+	} else 
+	{
+		// Mostrar el contingut de el fitxer llegit
+		GARLIC_printf("-> Contingut del %s:\n", nomFile);
+		GARLIC_printf("%s\n", buffer);  // Mostrar els bytes llegits en text
+	}
+
+	// Creem un nou contingut per escriure en el fitxer
+	char newContent[] = "Hola, soc el programa de usuari ORDH.\n";
+
+	// Escriure noves dades en el fitxer
+	size_t bytesWritten = GARLIC_fwrite(newContent, 1, sizeof(newContent) - 1, inf);
+	if (bytesWritten <= 0) {
+		GARLIC_printf("Error al escriure al %s\n", nomFile);
+	} else 
+	{
+		GARLIC_printf("-> Escrivint nous continguts:\n%s\n", newContent);
+	}
+
+
+	// Llegirlo novament i verificar l'escriptura
+	GARLIC_printf("\n\n### Llegint fitxer de nou ###\n");
+
+	// Llegir el fitxer novament
+	bytesRead = GARLIC_fread(buffer, 1, sizeof(buffer), inf);
+	if (bytesRead <= 0) 
+	{
+		GARLIC_printf("#Error al llegir el %s despres de l'escriptura\n", nomFile);
+	} else 
+	{
+		// Mostrar el contingut del fitxer després de l'escriptura
+		GARLIC_printf("-> Contingut de %s despres de l'escriptura:\n", nomFile);
+		GARLIC_printf("%s\n", buffer);  // Mostrar els bytes llegits en text
+	}
+
+	// Tancar el fitxer després de la lectura final
+	GARLIC_fclose(inf);
 	
-    // Llegir l'arxiu usant GARLIC_fread, llegint el buffer
-    size_t bytesRead = GARLIC_fread(buffer, 1, sizeof(buffer), inf);
-    if (bytesRead <= 0) {
-        GARLIC_printf("Error al llegir l'arxiu\n");
-    } else {
-        // Mostrar el contingut de l'arxiu llegit
-        GARLIC_printf("-> Contingut de l'arxiu:\n");
-        GARLIC_printf("Bytes read: %d\n%s\n", (int)bytesRead, buffer);  // Mostrar els bytes llegits en text
-    }
-    // Tancar l'arxiu
-    GARLIC_fclose(inf);
-	GARLIC_printf("##########################\n");
-	//////////////Arxiu llegit de /Datos//////////////
-    
+	//////////////////////////////////////////////////////////////////////
+	
 	
     // Generar números aleatoris y emmagatzemar-los en la llista generada
 	GARLIC_printf("-- Llista desordenada --\n");
