@@ -47,17 +47,18 @@ _gg_escribirLinea:
 	mla r6, r1, r5, r0 		@; R6 = Dir. base + despl. fila (2 * PCOLS * fila)
 	
 	@; 3. Escriure caracters al fons 2
+	mov r2, r2, lsl #1	@; charPndt * 2 ja que a la FASE 2 cada baldosa ocupa 2 bytes (char a short) 
 	mov r4, #0	@; R4 = Index caracters buffer
 	mov r5, #0	@; R5 = Index baldosa bitmap
 
 .LreadCharPndt:
 	cmp r4, r2		@; Mentre index (R4 -> [0,32]) != charPndt (R2 -> [0,32]) , escriure per pantalla 
-	beq .LfiEscribir
+	bge .LfiEscribir
 	
-	ldrb r7, [r3, r4]	@; R7 = Carregar valor pChars[i]
+	ldrh r7, [r3, r4]	@; R7 = Carregar valor pChars[i]
 	strh r7, [r6, r5]	@; R7 = Guardar valor pChars[i] sobre el bitmap
 	
-	add r4, #1	@; R4 = i++ sobre buffer pChars
+	add r4, #2	@; R4 = i++ sobre buffer pChars
 	add r5, #2	@; R5 = baldosa++ (2 bytes)
 	b .LreadCharPndt
 	

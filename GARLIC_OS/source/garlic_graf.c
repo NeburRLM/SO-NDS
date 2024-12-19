@@ -115,7 +115,7 @@ void _gg_generarMarco(int v, int color)
     }
 }
 
-/* _gg_iniGraf: inicializa el procesador gr�fico A para GARLIC 1.0 */
+/* _gg_iniGraf: inicializa el procesador grafico A para GARLIC 1.0 */
 void _gg_iniGrafA()
 {
 	videoSetMode(MODE_5_2D);	// Inicialitzar processador grafic principal (A) en mode 5
@@ -336,10 +336,9 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 	char resultat[3 * VCOLS + 1];	// Resultat max 3 files (+1 sentinella)
 	
 	int pControl = _gd_wbfs[ventana].pControl;	// Llegir camp pControl de la finestra actual
-	int charPndt = pControl & 0xFFFF;			// Comptador de caracters fins emplenar el buffer (0,32) (16b)
-	int numLinea = pControl >> 16;				// Comptador sobre el numero de fila/linea actual (0,23) (16b)
-	
-	char color = _gd_wbfs[ventana].pControl >> 28;	// Agafar valor de color emmagatzemat al buffer WBFS
+	int charPndt = pControl & 0xFFFF;			// Comptador de caracters fins emplenar el buffer (0,32) (16b baixos (0..15)
+	int numLinea = pControl >> 16 & 0xFFF;		// Comptador sobre el numero de fila/linea actual (0,23) (12b mitjans (27..16)
+	char color = pControl >> 28;				// Index de color (0, 3) (4b alts (31..28)
 	
 	// Convertir el string de format a text definitiu
 	_gg_procesarFormato(formato, val1, val2, resultat);
