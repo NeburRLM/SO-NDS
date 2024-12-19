@@ -193,10 +193,53 @@ _gg_escribirLineaTabla:
 	@;	R3 (color)	->	número de color del texto (0..3)
 	@; pila (vent)	->	número de ventana (0..15)
 _gg_escribirCar:
-	push {lr}
-	
+	push {r0-r6, lr}
+		@; 1. Comprovar valors correctes
+		@; R0 = vx
+		cmp r0, #0
+		blo .LfiEscrCar
+		cmp r0, #31
+		bhi .LfiEscrCar
+		@; R1 = vy - No es comprova pq sempre te valor 4097 (no 0 a 23)
+		@; R2 = car
+		cmp r2, #0
+		blo .LfiEscrCar
+		cmp r2, #127
+		bhi .LfiEscrCar
+		@; R3 = color
+		cmp r3, #0
+		blo .LfiEscrCar
+		cmp r3, #3
+		bhi .LfiEscrCar
+		@; R4 = vent
+		@; Cada registre en la pila ocupa 4 bytes
+		@; En total utilitzem 5 registres de dades (R0-R6) = 5*4 = 24 bytes
+		@; Despres, tambe utilitzem 2 registres de control (LR,PC) = 2*4 = 8 bytes
+		@; Total despl. per poder llegir el valor correcte de vent en la pila = 32 bytes
+		ldr r4, [sp, #32]
+		cmp r4, #0
+		blo .LfiEscrCar
+		cmp r4, #15
+		bhi .LfiEscrCar
+		
+		@; 2. Calcular posicio
+		mov r5, r0				@; R5 = vx
+		mov r0, r4				@; _calcPtrVentana necessita R0 = ventana
+		bl _calcPtrVentana 		@; R0 = Punter a mapPtr_2[fila + columna] -> Accedir a la finestra v sobre el bitmap
+		mov r4, #PCOLS
+		mov r4, r4, lsl #1		@; R4 = PCOLS x 2 a causa de les baldoses (2 bytes)
+		mov r5, r5, lsl #1		@; R5 = vx x 2 a causa de les baldoses (2 bytes)
+		mla r6, r1, r4, r5 		@; R6 = vy * PCOLS + vx
+		add r0, r6				@; R0 = Posicio (vx,vy)
 
-	pop {pc}
+		@; 3. Calcular color
+		mov r4, #128
+		mla r1, r3, r4, r2		@; R1 = color * 128 + car
+		@; 4. Guardar caracter
+		strh r1, [r0]
+		
+.LfiEscrCar:
+	pop {r0-r6, pc}
 
 
 
