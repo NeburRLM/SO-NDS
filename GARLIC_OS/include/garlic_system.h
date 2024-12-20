@@ -185,7 +185,7 @@ extern void _gg_generarMarco(int v, int color);
 		val2	->	valor a sustituir en la segunda marca de formato, si existe
 					- los valores pueden ser un código ASCII (%c), un valor
 					  natural de 32 bits (%d, %x) o un puntero a string (%s)
-		ventana	->	número de ventana (0..3)
+		ventana	->	número de ventana (0..16)
 */
 extern void _gg_escribir(char *formato, unsigned int val1, unsigned int val2,
 																   int ventana);

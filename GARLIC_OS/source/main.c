@@ -184,11 +184,47 @@ int main(int argc, char **argv) {
 	inicializarSistema();
 	
 	_gg_escribir("%1********************************", 0, 0, 0);
-	_gg_escribir("%1*                              *", 0, 0, 0);
-	_gg_escribir("%1* Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
-	_gg_escribir("%1*                              *", 0, 0, 0);
-	_gg_escribir("%1********************************", 0, 0, 0);
+	_gg_escribir("%1*                              *", 0, 0, 1);
+	_gg_escribir("%1* Sistema Operativo GARLIC 2.0 *", 0, 0, 2);
+	_gg_escribir("%1*                              *", 0, 0, 3);
+	_gg_escribir("%1********************************", 0, 0, 4);
 	_gg_escribir("%1*** Inicio fase 2 / ProgG\n", 0, 0, 0);
+	
+	/* TEST */
+	
+	_ga_delay(1);
+	_gg_escribirCar(10, 10, 33, 0, 0);
+	_ga_delay(1);
+	_gg_escribirCar(10, 10, 34, 0, 1);
+	_ga_delay(1);
+	_gg_escribirCar(10, 10, 35, 0, 15);
+	_ga_delay(1);
+	_gg_escribirCar(10, 10, 36, 0, 14);
+	
+	
+	
+	char mat[8][8] = {
+		{ 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17 },
+		{ 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37 },
+		{ 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37 },
+		{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+		{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+		{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+		{ 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37 },
+		{ 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37 }
+	};
+	
+	_ga_delay(1);
+	_gg_escribirMat(0, 10, mat, 0, 0);
+	_ga_delay(1);
+	_gg_escribirMat(1, 15, mat, 1, 1);
+	_ga_delay(1);
+	_gg_escribirMat(10, 10, mat, 2, 4);
+	_ga_delay(1);
+	_gg_escribirMat(20, 15, mat, 3, 6);
+	_ga_delay(1);
+	_gg_escribirMat(5, 12, mat, 0, 15);
+	
 
 	while (1)						// bucle infinito
 	{
