@@ -212,9 +212,7 @@ _escriureSeparador:
 	@;	R1 (color)	->	número de color (0..3)
 _gg_escribirLineaTabla:
 	push {r0-r12, lr}
-	@; _gd_pidz - número de zócalo (1a columna)
-	@; _gd_pidCount - Comptador de PID (2n columna)
-	
+
 @; 0. Guardar dades
 	mov r12, r0	@; R12 = z
 	mov r11, r1	@; R11 = color
@@ -243,8 +241,6 @@ _gg_escribirLineaTabla:
 	mla r9, r8, r12, r9		@; R9 = Dir. mem. PCB[z]
 
 @; 5. Obtenir i escriure en la pantalla inferior NDS els camps z, PCB[z].PID i PCB[z].keyName
-@; Opcio 1 - Accedir a PCB[z].PID 
-@; Opcio 2 - Accedir a _gd_pidCount - Comptador de PID (2n columna)
 	
 	@; Camp Zocalo (Z)
 	ldr r0, =_gd_bufferZ	@; R0 = Punter buffer Z per poder convertir el valor numeric a str (_gs_num2str_dec)
@@ -266,6 +262,9 @@ _gg_escribirLineaTabla:
 	ldr r0, =_gd_bufferPID	@; R0 = Punter buffer PID per poder convertir el valor numeric a str (_gs_num2str_dec)
 	mov r1, #3				@; R1 = Longitud buffer
 	ldr r2, [r9]			@; R2 = PCB[z].PID
+	cmp r2, #0				@; Solament escriure si PID != 0
+	beq .LerrorEscripturaBuffer
+	
 	bl _gs_num2str_dec		@; Convertir valor numeric a str per poder escriure'l a la pantalla inferior de la NDS
 	
 	cmp r0, #0				@; R0 != 0 si error
@@ -279,25 +278,22 @@ _gg_escribirLineaTabla:
 	bl _gs_escribirStringSub	@; Escriure string a pantalla inferior NDS
 	
 	@; Camp keyName
-	ldr r0, =_gd_bufferKeyName	@; R0 = Punter buffer keyName per poder convertir el valor numeric a str (_gs_num2str_dec)
-	mov r1, #3					@; R1 = Longitud buffer
-	mov r8, r9
-	add r8, #20
-	ldr r2, [r8]				@; R2 = PCB[z].keyName
-	bl _gs_num2str_dec			@; Convertir valor numeric a str per poder escriure'l a la pantalla inferior de la NDS
+	mov r0, r9
+	add r0, #16					@; R0 = Dir. mem. PCB[z].keyName
+	mov r1, r12					@; R1 = Fila
+	add r1, #4					@; R1 = Fila + 4 (despl. a la primera fila de la taula)
+	mov r2, #9					@; R2 = Columna
+	mov r3, r11					@; R3 = Color
+	bl _gs_escribirStringSub	@; Escriure string a pantalla inferior NDS
 	
-	cmp r0, #0					@; R0 != 0 si error
-	bne .LerrorEscripturaBuffer
+	@; Reescriure 'Prog|', ja que keyName sobreescriu aquest valor mentre el proces corre
+	mov r5, #128			@; Multiplicador per al color
+    mov r6, #104			@; Codi separador '|'
+    mla r11, r5, r11, r6	@; R1 = '|' + 128 * color
+	add r10, #26		@; Despl. columna fins 'Prog|'
+	strh r11, [r10]		@; Escriure separador 'Prog|'
 	
-	ldr r0, =_gd_bufferKeyName		@; R0 = Recarregar buffer, ara ja amb el valor convertit a string
-	mov r1, r12						@; R1 = Fila
-	add r1, #4						@; R1 = Fila + 4 (despl. a la primera fila de la taula)
-	mov r2, #11						@; R2 = Columna
-	mov r3, r11						@; R3 = Color
-	bl _gs_escribirStringSub		@; Escriure string a pantalla inferior NDS
-
 .LerrorEscripturaBuffer:
-
 	pop {r0-r12, pc}
 
 
