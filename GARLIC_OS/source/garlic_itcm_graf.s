@@ -435,13 +435,46 @@ _gg_escribirMat:
 
 
 	.global _gg_rsiTIMER2
-	@; Rutina de Servicio de Interrupción (RSI) para actualizar la representa-
-	@; ción del PC actual.
+	@; Rutina de Servicio de Interrupción (RSI) para actualizar la representación del PC actual.
 _gg_rsiTIMER2:
-	push {lr}
+	push {r0-r7, lr}
+	
+	ldr r0, =_gd_pcbs		@; R0 = Dir base vector de PCBs
+    mov r1, #0				@; R1 = Index de Z (inicial z = 0)
+    mov r2, #16				@; R2 = Num total de Z (16)
+    mov r3, #24				@; R3 = Mida de cada PCB (24 bytes per proces)
 
+.IterZ:
+    cmp r1, r2
+    beq .FiRSI				@; Si ja s'han processat tots els Z sortir
+	
+	mov r7, r1				@; R7 = Copia zocalo Z
+    mla r4, r1, r3, r0		@; R4 = Dir. base del PCB del zocalo actual (PCB[z])
 
-	pop {pc}
+    ldr r5, [r4, #0]		@; R5 = PCB[z].PID
+    cmp r5, #0
+    beq .SeguentZ			@; Si PID es 0 (no actiu), passar al seg. zocalo
+
+    ldr r6, [r4, #4]		@; R6 = PCB[z].PC
+    ldr r0, =_gd_bufferPC	@; R0 = Dir. del buffer per convertir el PC a str
+    mov r1, #9				@; R1 = Mida bufferPC
+    mov r2, r6				@; R2 = PCB[z].PC
+    bl _gs_num2str_hex		@; Convertir valor numeric a str per poder escriure'l a la pantalla inferior de la NDS
+
+    mov r0, r7					@; R0 = Index zocalo actual
+    add r0, #4					@; R0 = Index fila taula (Z+4)
+    mov r1, #20					@; R1 = Columna taula de PCactual
+    ldr r2, =_gd_bufferPC		@; R2 = Dir. mem. string PCactual convertit a str
+    mov r3, #3					@; R3 = Color
+    bl _gs_escribirStringSub	@; Escriure string a pantalla inferior NDS
+	
+.SeguentZ:
+    add r1, #1	@; z++
+    b .IterZ
+	
+.FiRSI:
+
+	pop {r0-r7, pc}
 
 
 .end
