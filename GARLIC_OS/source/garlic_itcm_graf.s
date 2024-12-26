@@ -437,44 +437,122 @@ _gg_escribirMat:
 	.global _gg_rsiTIMER2
 	@; Rutina de Servicio de Interrupción (RSI) para actualizar la representación del PC actual.
 _gg_rsiTIMER2:
-	push {r0-r7, lr}
+	push {r0-r10, lr}
 	
-	ldr r0, =_gd_pcbs		@; R0 = Dir base vector de PCBs
-    mov r1, #0				@; R1 = Index de Z (inicial z = 0)
-    mov r2, #16				@; R2 = Num total de Z (16)
-    mov r3, #24				@; R3 = Mida de cada PCB (24 bytes per proces)
-
-.IterZ:
-    cmp r1, r2
-    beq .FiRSI				@; Si ja s'han processat tots els Z sortir
+	@; R0-R3 reservat per cridar funcions externes (bl)
+	ldr r4, =_gd_pcbs		@; R4 = Dir base vector de PCBs
+	mov r5, #1				@; R5 = Index de Z (inicial z = 0 per GARL)
+    mov r6, #16				@; R6 = Num total de Z (16)
+    mov r7, #24				@; R7 = Mida de cada PCB (24 bytes per proces)
 	
-	mov r7, r1				@; R7 = Copia zocalo Z
-    mla r4, r1, r3, r0		@; R4 = Dir. base del PCB del zocalo actual (PCB[z])
-
-    ldr r5, [r4, #0]		@; R5 = PCB[z].PID
-    cmp r5, #0
-    beq .SeguentZ			@; Si PID es 0 (no actiu), passar al seg. zocalo
-
-    ldr r6, [r4, #4]		@; R6 = PCB[z].PC
-    ldr r0, =_gd_bufferPC	@; R0 = Dir. del buffer per convertir el PC a str
+@; 0. Mostrar proces principal (GARL)
+	ldr r0, =_gd_bufferPC	@; R0 = Dir. del buffer per convertir el PC a str
     mov r1, #9				@; R1 = Mida bufferPC
-    mov r2, r6				@; R2 = PCB[z].PC
+	mov r3, #4
+	add r3, r4
+	ldr r2, [r3]			@; R2 = PCB[z].PC
     bl _gs_num2str_hex		@; Convertir valor numeric a str per poder escriure'l a la pantalla inferior de la NDS
 
-    mov r0, r7					@; R0 = Index zocalo actual
-    add r0, #4					@; R0 = Index fila taula (Z+4)
-    mov r1, #20					@; R1 = Columna taula de PCactual
-    ldr r2, =_gd_bufferPC		@; R2 = Dir. mem. string PCactual convertit a str
-    mov r3, #3					@; R3 = Color
+	ldr r0, =_gd_bufferPC		@; R0 = Dir. mem. string PCactual convertit a str
+    mov r1, #4					@; R1 = Index fila taula (Z+4)
+    mov r2, #14					@; R2 = Columna taula de PCactual
+    mov r3, #0					@; R3 = Color
     bl _gs_escribirStringSub	@; Escriure string a pantalla inferior NDS
-	
-.SeguentZ:
-    add r1, #1	@; z++
-    b .IterZ
-	
-.FiRSI:
 
-	pop {r0-r7, pc}
+@; 1. Iterar zocalos Z
+.LIterZ:
+    cmp r5, r6
+    beq .LFiRSI				@; Si ja s'han processat tots els Z sortir
+	
+@; 2. Obtenir PCB[z]
+	mla r8, r5, r7, r4		@; R8 = Dir. base del PCB del zocalo actual (PCB[z])
+	ldr r9, [r8]			@; R9 = PCB[z].PID
+    
+	cmp r9, #0
+    beq .LBorrarZ			@; Si PID es 0 (no actiu), netejar pantalla (esborrar PC)
+	
+@; 3. Convertir PCB[z].PC de num (hex) a string
+	ldr r0, =_gd_bufferPC	@; R0 = Dir. del buffer per convertir el PC a str
+    mov r1, #9				@; R1 = Mida bufferPC
+	mov r10, #4
+	ldr r2, [r8, r10]		@; R2 = PCB[z].PC
+    bl _gs_num2str_hex		@; Convertir valor numeric a str per poder escriure'l a la pantalla inferior de la NDS
+
+	cmp r0, #0
+	bne .LBorrarZ				@; Esborrar linea en cas d'error
+
+@; 4. Escriure PCB[z].PC a pantalla inferior
+	ldr r0, =_gd_bufferPC		@; R0 = Dir. mem. string PCactual convertit a str
+    mov r1, r5
+    add r1, #4					@; R1 = Index fila taula (Z+4)
+    mov r2, #14					@; R2 = Columna taula de PCactual
+    mov r3, #0					@; R3 = Color
+    bl _gs_escribirStringSub	@; Escriure string a pantalla inferior NDS
+
+	b .LSeguentZ				@; Passar al seguent zocalo
+
+.LBorrarZ:
+	
+@; 1. Calcular linea zocalo Z a esborrar 
+	mov r0, #0x06200000		@; R0 (BASE_MAPA) = base del mapa de caracters de la pantalla inferior
+	mov r1, #64				@; R1 = VCOLS * 2
+	mov r2, #4				@; Despl. inicial (4 files mes avall)
+	mla r0, r1, r2, r0		@; R0 = Accedir primera linea taula (Z=0) - (BASE_MAPA + (VCOLS * 2 * 4)
+	
+	mla r0, r1, r5, r0		@; R0 = Accedir linea taula Z (BASE_MAPA_ACTUAL + (VCOLS * 2 * Z))
+	
+@; 2. Eliminar informacio linea
+    mov r1, #0	@; Guardar 0 sobre el valor a esborrar
+	
+	@; Eliminar PID
+	mov r2, #8
+	str r1, [r0, r2]			
+	add r2, #4
+	str r1, [r0, r2]
+	
+	@; Eliminar Prog
+	add r2, #6
+	strh r1, [r0, r2]
+	add r2, #2
+	str r1, [r0, r2]			
+	add r2, #4
+	strh r1, [r0, r2]
+	
+	@; Eliminar PCActual
+	add r2, #4
+	str r1, [r0, r2]
+	add r2, #4
+	str r1, [r0, r2]			
+	add r2, #4
+	str r1, [r0, r2]
+	add r2, #4
+	str r1, [r0, r2]
+	
+	@; Eliminar Pi
+	add r2, #6
+	strh r1, [r0, r2]			
+	add r2, #2
+	strh r1, [r0, r2]
+	
+	@; Eliminar E
+	add r2, #4
+	strh r1, [r0, r2]	
+	
+	@; Eliminar Uso
+	add r2, #4
+	str r1, [r0, r2]
+	add r2, #4
+	strh r1, [r0, r2]
+	
+	b .LSeguentZ	@; Solament especificar que despres d'eliminar fem z++
+
+.LSeguentZ:
+	add r5, #1	@; z++
+	b .LIterZ
+
+.LFiRSI:
+
+	pop {r0-r10, pc}
 
 
 .end
