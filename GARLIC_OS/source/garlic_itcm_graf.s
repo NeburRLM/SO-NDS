@@ -220,27 +220,24 @@ _gg_escribirLineaTabla:
 @; 1. Calcular posicio base de la linea en la taula
 	mov r2, #0x06200000		@; R2 (BASE_MAPA) = base del mapa de caracters de la pantalla inferior
     mov r5, #64				@; R5 = VCOLS * 2
-	@; Despl. inicial (4 files mes avall)
-	mov r6, #4
-	mla r6, r5, r6, r2		@; R6 = BASE_MAPA + (VCOLS * 2 * 4)
+	mov r6, #4				@; Despl. inicial (4 files mes avall)
+	mla r6, r5, r6, r2		@; R6 = Accedir primera linea taula (Z=0) - (BASE_MAPA + (VCOLS * 2 * 4)
 	@; Despl. segons Z
-	mla r0, r5, r0, r6		@; R0 = BASE_MAPA_ACTUAL + (VCOLS * 2 * Z)
+	mla r0, r5, r0, r6		@; R0 = Accedir linea taula Z (BASE_MAPA_ACTUAL + (VCOLS * 2 * Z))
 	mov r10, r0				@; R10 = Copia BASE_MAPA_ACTUAL + (VCOLS * 2 * Z)
 	
-@; 2. Generar color para els separadors (codi 104)
+@; 2. Generar color i escriure els separadors (codi 104)
     mov r5, #128			@; Multiplicador per al color
     mov r6, #104			@; Codi separador '|'
     mla r1, r5, r1, r6		@; R1 = '|' + 128 * color
+	bl _escriureSeparador	@; Escriure els separadors en la posicio corresponent de la taula
 	
-@; 3. Escriure els separadors en la posicio corresponent de la taula
-	bl _escriureSeparador
-	
-@; 4. Calcular PCB[z]
+@; 3. Calcular PCB[z]
 	ldr r9, =_gd_pcbs		@; Dir base vector de PCBs
 	mov r8, #24				@; Accedir a dir. mem. PCB[0] (ocupa 24 B cada entrada)
 	mla r9, r8, r12, r9		@; R9 = Dir. mem. PCB[z]
 
-@; 5. Obtenir i escriure en la pantalla inferior NDS els camps z, PCB[z].PID i PCB[z].keyName
+@; 4. Obtenir i escriure en la pantalla inferior NDS els camps z, PCB[z].PID i PCB[z].keyName
 	
 	@; Camp Zocalo (Z)
 	ldr r0, =_gd_bufferZ	@; R0 = Punter buffer Z per poder convertir el valor numeric a str (_gs_num2str_dec)
@@ -258,14 +255,17 @@ _gg_escribirLineaTabla:
 	mov r3, r11					@; R3 = Color
 	bl _gs_escribirStringSub	@; Escriure string a pantalla inferior NDS
 	
-	@; Camp PID
+	@; Camp PID (sols si z = 0 o PID != 0)
+	ldr r2, [r9]			@; R2 = PCB[z].PID
+	cmp r12, #0
+	beq .LEscrPID			@; Si z = 0, escriure PID
+    cmp r2, #0
+	beq .LerrorEscripturaBuffer			@; Saltar escritura si PID == 0 en z != 0
+
+.LEscrPID:
 	ldr r0, =_gd_bufferPID	@; R0 = Punter buffer PID per poder convertir el valor numeric a str (_gs_num2str_dec)
 	mov r1, #3				@; R1 = Longitud buffer
-	ldr r2, [r9]			@; R2 = PCB[z].PID
-	cmp r2, #0				@; Solament escriure si PID != 0
-	beq .LerrorEscripturaBuffer
-	
-	bl _gs_num2str_dec		@; Convertir valor numeric a str per poder escriure'l a la pantalla inferior de la NDS
+    bl _gs_num2str_dec		@; Convertir a string
 	
 	cmp r0, #0				@; R0 != 0 si error
 	bne .LerrorEscripturaBuffer
@@ -276,7 +276,7 @@ _gg_escribirLineaTabla:
 	mov r2, #6					@; R2 = Columna
 	mov r3, r11					@; R3 = Color
 	bl _gs_escribirStringSub	@; Escriure string a pantalla inferior NDS
-	
+
 	@; Camp keyName
 	mov r0, r9
 	add r0, #16					@; R0 = Dir. mem. PCB[z].keyName
