@@ -66,7 +66,7 @@ int _start(int arg) {
     // Escriure missatge inicial
     GARLIC_printf("* Inici programa SQR1\n");
 	
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < (25 * arg); i++) {
         // Generar un valor aleatori entre 1 i 10.000 * arg (+ 1 per no ser 0)
         //randNum = GARLIC_random() % (10000 * arg) + 1;
 		GARLIC_divmod(GARLIC_random(), 10000 * arg, &quo, &randNum);	// Convertir valor Q12 a decimal
@@ -78,7 +78,7 @@ int _start(int arg) {
 		GARLIC_divmod(sqrtResult, den, &quoEnter, &mod);	// Convertir valor Q12 a decimal
 		GARLIC_divmod(mod * 1000, den, &quoDecimal, &mod);	// El residu continua en Q12, s'ha de convertir
 		
-		GARLIC_printf("Valor: %d\n", randNum);
+		GARLIC_printf("%d: Valor: %d\n", ++i, randNum);
 		GARLIC_printf("Arrel Q12: %d,%d\n\n", quoEnter, quoDecimal);
     }
     
