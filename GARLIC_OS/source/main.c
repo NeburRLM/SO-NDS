@@ -174,8 +174,6 @@ void inicializarSistema() {
 	REG_IME = IME_ENABLE;			// activar las interrupciones en general
 }
 
-
-
 //------------------------------------------------------------------------------
 int main(int argc, char **argv) {
 //------------------------------------------------------------------------------
@@ -184,47 +182,29 @@ int main(int argc, char **argv) {
 	inicializarSistema();
 	
 	_gg_escribir("%1********************************", 0, 0, 0);
-	_gg_escribir("%1*                              *", 0, 0, 1);
-	_gg_escribir("%1* Sistema Operativo GARLIC 2.0 *", 0, 0, 2);
-	_gg_escribir("%1*                              *", 0, 0, 3);
-	_gg_escribir("%1********************************", 0, 0, 4);
+	_gg_escribir("%1*                              *", 0, 0, 0);
+	_gg_escribir("%1* Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
+	_gg_escribir("%1*                              *", 0, 0, 0);
+	_gg_escribir("%1********************************", 0, 0, 0);
 	_gg_escribir("%1*** Inicio fase 2 / ProgG\n", 0, 0, 0);
 	
-	/* TEST */
-	
-	_ga_delay(1);
-	_gg_escribirCar(10, 10, 33, 0, 0);
-	_ga_delay(1);
-	_gg_escribirCar(10, 10, 34, 0, 1);
-	_ga_delay(1);
-	_gg_escribirCar(10, 10, 35, 0, 15);
-	_ga_delay(1);
-	_gg_escribirCar(10, 10, 36, 0, 14);
-	
-	
-	
-	char mat[8][8] = {
-		{ 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17 },
+	/* TEST _gg_escribirMat */
+	char mat[8][8] =
+	{
+		{ 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47 },
 		{ 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37 },
-		{ 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37 },
-		{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-		{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-		{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-		{ 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37 },
-		{ 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37 }
+		{ 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27 },
+		{ 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57 },
+		{ 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67 },
+		{ 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77 },
+		{ 0x5A, 0x5B, 0x5C, 0x5D, 0x5E, 0x5F, 0x60, 0x61 },
+		{ 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F, 0x70, 0x71 },
 	};
-	
-	_ga_delay(1);
-	_gg_escribirMat(0, 10, mat, 0, 0);
-	_ga_delay(1);
-	_gg_escribirMat(1, 15, mat, 1, 1);
-	_ga_delay(1);
-	_gg_escribirMat(10, 10, mat, 2, 4);
-	_ga_delay(1);
-	_gg_escribirMat(20, 15, mat, 3, 6);
-	_ga_delay(1);
+
+	_gg_escribirMat(1, 15, mat, 1, 10);
+	_gg_escribirMat(10, 10, mat, 2, 11);
+	_gg_escribirMat(20, 15, mat, 3, 14);
 	_gg_escribirMat(5, 12, mat, 0, 15);
-	
 
 	while (1)						// bucle infinito
 	{

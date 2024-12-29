@@ -170,7 +170,7 @@ void _gg_iniGrafA()
 	    // Descomprimir les baldoses originals (en blanc) al mapaColor actual
 		decompress(garlic_fontTiles, mapaColor, LZ77Vram);
 		
-		// Copiar baldosa per cada byte de les 128 baldoses
+		// Processar cada pixel de la baldosa de les 128 baldoses
 		for (int j = 0; j < 4096; j++)
 		{
 			if (mapaColor[j] & 0xFF00)	// Agafar valor bits alts (bits 15-8)
@@ -400,9 +400,10 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 					_gd_wbfs[ventana].pChars[charPndt++] = ' '  - 32;	// Plenar buffer
 				}
 			}
-			else if(charActual >= '\x80' && charActual <= '\xFF')	/* Cas caracter custom (128-255 en hexa) */
+			else if(charActual >= '\x80' && charActual <= '\x87')	/* Cas caracter custom (128-135 en hexa) */
 			{
-				_gd_wbfs[ventana].pChars[charPndt++] = charActual + 128 * color;	// Guardar custom char
+				/* charActual + 128 * 3 per saltar els 3 colors + 8 * color per agafar el caracter amb el color pertinent */
+				_gd_wbfs[ventana].pChars[charPndt++] = charActual + 128 * 3 + (color == 0 ? 0 : (8 * color));
 			}
 			else	/* Cas caracter literal */
 			{
@@ -419,15 +420,47 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 
 /* _gg_setChar: escribe una cadena de caracteres en la ventana indicada;
 	Parametros:
-		n	->	numero de caracter ASCII Extended (entre 128 i 255)
+		n	->	numero de caracter ASCII Extended (entre 128 i 135)
 		buffer	->	punter a matriu de 8x8 bytes
 */
 void _gg_setChar(unsigned char n, unsigned char *buffer)
 {
-    if (n < 128 || n > 255) { return; }	// Comprovar n dins del rang
+    if (n < 128 || n > 135) { return; }	// Comprovar n dins del rang
 
-	// Calcular dir. base baldoses[n]
-    u16 * tileBaseAddress = bgGetGfxPtr(background_2) + (n * 32);
+    // Calcular dir. base baldoses[n] (4096 * 3 per saltar la paleta inicial amb totes les variants de color)
+    u16 *tileBaseAddress = bgGetGfxPtr(background_2) + (n * 32) + (4096 * 3);	
+
 	// Copiar el buffer (customChar) a la direccio de mem. de les baldoses (VRAM)
-	dmaCopy(buffer, tileBaseAddress, 64);
+    //dmaCopy(buffer, tileBaseAddress, 64);
+	_gs_copiaMem(buffer, tileBaseAddress, 64);
+
+	// Cada mapa de color custom ocupa 256 bytes
+	// 8 baldoses * (64 pixels/baldosa / 2 bytes/pixel) = 256 bytes    
+	u16 *colorTileBase = tileBaseAddress + (8 * 32); // Base de colores
+	
+    for (int colorIndx = 0; colorIndx < 3; colorIndx++)
+	{
+		// Copiar la baldosa original al mapa de color corresponent
+        //dmaCopy(tileBaseAddress, colorTileBase, 64);
+		_gs_copiaMem(tileBaseAddress, colorTileBase, 64);
+		
+        // Processar cada pixel de la baldosa
+        for (int i = 0; i < 32; i++)	// Procesar 32 pixels (16 bits per pixel)
+		{ 
+            u16 pixel = tileBaseAddress[i]; // Llegir pixel original
+            
+            // Verificar si el pixel es blanc en bits baixos o alts
+            if ((pixel & 0x00FF) == 0x00FF)
+			{
+                // Aplicar el nou color als bits baixos
+                colorTileBase[i] = (colorTileBase[i] & 0xFF00) | char_colors[colorIndx];
+            }
+            if ((pixel & 0xFF00) == 0xFF00)
+			{
+                // Aplicar el nou color als bits alts
+                colorTileBase[i] = (colorTileBase[i] & 0x00FF) | (char_colors[colorIndx] << 8);
+            }
+        }
+		colorTileBase += 256;
+    }
 }
