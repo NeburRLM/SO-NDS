@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------
 
 	"garlic_system.h" : definiciones de las variables globales, funciones y
-						rutinas del sistema operativo GARLIC (versi�n 1.0)
+						rutinas del sistema operativo GARLIC (versión 2.0)
 
 	Analista-programador: santiago.romani@urv.cat
 	Programador P: ines.ortizf@estudiants.urv.cat
@@ -68,11 +68,12 @@ extern garlicPCB _gd_pcbs[16];	// vector de PCBs de los procesos activos
 
 typedef struct				// Estructura del buffer de una ventana
 {							// (WBUF: Window BUFfer)
-	int pControl;			//	control de escritura en ventana
-							//		16 bits altos: n�mero de l�nea (0..23)
-							//		16 bits bajos: caracteres pendientes (0..32)
-	short pChars[32];		//	vector de 32 caracteres pendientes de escritura
-							//		indicando el c�digo ASCII de cada posici�n
+	int pControl;			// control de escritura en ventana
+							// 4 bits altos: cód. color actual (0..3)
+							// 12 bits medios: número de línea (0..23) --- (ANTERIOR) 16 bits altos: numero de linea (0..23)
+							// 16 bits bajos: caracteres pendientes (0..32)
+	short pChars[32];		// vector de 32 caracteres pendientes de escritura
+							// indicando el codigo ASCII de cada posici�n
 } PACKED garlicWBUF;
 
 extern garlicWBUF _gd_wbfs[16];	// vector con los buffers de 16 ventanas
@@ -121,38 +122,6 @@ extern int _gp_numProc();
 */
 extern int _gp_crearProc(intFunc funcion, int zocalo, char *nombre, int arg);
 
-/* _gp_retardarProc:	retarda la ejecución del proceso actual durante el
-				número de segundos que se especifica por parámetro,
-				colocándolo en el vector de DELAY;
-	Parámetros:
-		nsec ->	número de segundos (máx. 600); si se especifica 0, el proceso
-				solo se desbanca y el retardo será el tiempo que tarde en ser
-				restaurado (depende del número de procesos activos del sistema)
-	ATENCIÓN:
-				¡el proceso del sistema operativo (PIDz = 0) NO podrá utilizar
-				esta función, para evitar que el procesador se pueda quedar sin
-				procesos a ejecutar!
-*/
-extern int _gp_retardarProc(int nsec);
-
-
-/* _gp_matarProc:	elimina un proceso de las colas de READY o DELAY, según
-				donde se encuentre, libera memoria y borra el PID de la
-				estructura _gd_pcbs[zocalo] correspondiente al zócalo que se
-				pasa por parámetro;
-	ATENCIÓN:	Esta función solo la llamará el sistema operativo, por lo tanto,
-				no será necesario realizar comprobaciones del parámetro; por
-				otro lado, el proceso del sistema operativo (zocalo = 0) ¡NO se
-				tendrá que destruir a sí mismo!
-*/
-extern int _gp_matarProc(int zocalo);
-
-
-
-/* _gp_rsiTIMER0:	servicio de interrupciones del TIMER0 de la plataforma NDS,
-				que refrescará periódicamente la información de la tabla de
-				procesos relativa al tanto por ciento de uso de la CPU; */
-extern void _gp_rsiTIMER0();
 
 //------------------------------------------------------------------------------
 //	Funciones de gesti�n de memoria (garlic_mem.c)
@@ -163,30 +132,19 @@ extern void _gp_rsiTIMER0();
 */
 extern int _gm_initFS();
 
-/* _gm_listaProgs: devuelve una lista con los nombres en clave de todos
-				los programas que se encuentran en el directorio "Programas".
-				Se considera que un fichero es un programa si su nombre tiene
-				8 carácteres y termina con ".elf"; se devuelven solo los
-				4 primeros carácteres del nombre del fichero (nombre en clave),
-				que por convenio deben estar en mayúsculas;
-				el resultado es un vector de strings (paso por referencia) y
-				el número de programas detectados; */
-extern int _gm_listaProgs(char* progs[]);
-
 /* _gm_cargarPrograma: busca un fichero de nombre "(keyName).elf" dentro del
 					directorio "/Programas/" del sistema de ficheros y carga
 					los segmentos de programa a partir de una posición de
 					memoria libre, efectuando la reubicación de las referencias
 					a los símbolos del programa según el desplazamiento del
-					código y los datos en la memoria destino;
+					código en la memoria destino;
 	Parámetros:
-		zocalo	->	índice del zócalo que indexará el proceso del programa
 		keyName ->	string de 4 carácteres con el nombre en clave del programa
 	Resultado:
 		!= 0	->	dirección de inicio del programa (intFunc)
 		== 0	->	no se ha podido cargar el programa
 */
-extern intFunc _gm_cargarPrograma(int zocalo, char *keyName);
+extern intFunc _gm_cargarPrograma(char *keyName);
 
 
 //------------------------------------------------------------------------------
@@ -196,36 +154,10 @@ extern intFunc _gm_cargarPrograma(int zocalo, char *keyName);
 /* _gm_reubicar: rutina de soporte a _gm_cargarPrograma(), que interpreta los
 					'relocs' de un fichero ELF contenido en un buffer *fileBuf,
 					y ajusta las direcciones de memoria correspondientes a las
-					referencias de tipo R_ARM_ABS32, a partir de las direcciones
-					de memoria destino de código (dest_code) y datos (dest_data)
-					y según el valor de las direcciones de las referencias a
-					reubicar y de las direcciones de inicio de los segmentos de
-					código (pAddr_code) y datos (pAddr_data); */
-extern void _gm_reubicar(char *fileBuf,
-							unsigned int pAddr_code, unsigned int *dest_code,
-							unsigned int pAddr_data, unsigned int *dest_data);
-
-
-/* _gm_reservarMem: rutina para reservar un conjunto de franjas de memoria 
-				libres consecutivas que proporcionen un espacio suficiente para
-				albergar el tamaño de un segmento de código o datos del proceso
-				(según indique tipo_seg), asignando al número de zócalo que se
-				pasa por parámetro;
-				la rutina devuelve la primera dirección del espacio reservado; 
-				en el caso de que no quede un espacio de memoria consecutivo del
-				tamaño requerido, devuelve cero; */
-extern void * _gm_reservarMem(int z, int tam, unsigned char tipo_seg);
-
-
-/* _gm_liberarMem: rutina para liberar todas las franjas de memoria asignadas
-				al proceso del zócalo indicado por parámetro; */
-extern void _gm_liberarMem(int z);
-
-
-/* _gm_rsiTIMER1:	servicio de interrupciones del TIMER1 de la plataforma NDS,
-				que refrescará periódicamente la información de la tabla de
-				procesos relativa al uso de la pila y el estado del proceso; */
-extern void _gm_rsiTIMER1();
+					referencias de tipo R_ARM_ABS32, restando la dirección de
+					inicio de segmento (pAddr) y sumando la dirección de destino
+					en la memoria (*dest) */
+extern void _gm_reubicar(char *fileBuf, unsigned int pAddr, unsigned int *dest);
 
 
 //------------------------------------------------------------------------------
@@ -253,7 +185,7 @@ extern void _gg_generarMarco(int v, int color);
 		val2	->	valor a sustituir en la segunda marca de formato, si existe
 					- los valores pueden ser un código ASCII (%c), un valor
 					  natural de 32 bits (%d, %x) o un puntero a string (%s)
-		ventana	->	número de ventana (0..3)
+		ventana	->	número de ventana (0..16)
 */
 extern void _gg_escribir(char *formato, unsigned int val1, unsigned int val2,
 																   int ventana);

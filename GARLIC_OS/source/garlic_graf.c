@@ -10,8 +10,8 @@
 #include "garlic_system.h"	// definicion de funciones y variables de sistema
 #include "garlic_font.h"	// definicion grafica de caracteres
 
-#define NVENT 4 // numero de ventanas totales
-#define PPART 2 // numero de ventanas horizontales
+#define NVENT 16 // numero de ventanas totales
+#define PPART 4 // numero de ventanas horizontales
 
 #define VCOLS 32
 #define VFILS 24
@@ -21,6 +21,8 @@
 // Constants per als caracters especials (funcio addicional GARLIC_setChar())
 #define NUM_CUSTOM_CHARS 128	// Rang: 128 - 255
 #define TAM_CARACTER 8			// Mida 8x8 per cada caracter especial
+
+const unsigned int char_colors[] = {240, 96, 64};	// amarillo, verde, rojo
 
 // Variables
 // Fondos 2 i 3
@@ -75,8 +77,10 @@ unsigned char normalitzarChar(unsigned char c)
 }
 
 /* _gg_generarMarco: dibuja el marco de la ventana que se indica por par�metro*/
-void _gg_generarMarco(int v)
+void _gg_generarMarco(int v, int color)
 {
+	color *= 128;	// Color * 128 per despl. a l'index corresponent al color X del conjunt de baldoses
+
 	/* Calcular fila (Fv) i columna (Cv) inicial per cada finestra
 	 * Exemple: (v=3) 
 	 * 	Fv = (3 / 2) * 24 = 1 * 24 = 24
@@ -86,57 +90,61 @@ void _gg_generarMarco(int v)
     int Cv = (v % PPART) * VCOLS; // Columna inicial
 
 	// 1. Dibuixar marc superior-esquerra (103)
-	mapPtr_3[Fv * PCOLS + Cv] = 103;
+	mapPtr_3[Fv * PCOLS + Cv] = 103 + color;
 	
 	// 2. Dibuixar marc superior-dreta (102)
-    mapPtr_3[Fv * PCOLS + (Cv + VCOLS - 1)] = 102;
+    mapPtr_3[Fv * PCOLS + (Cv + VCOLS - 1)] = 102 + color;
 	
 	// 3. Dibuixar marc inferior-esquerra (100)
-	mapPtr_3[(Fv + VFILS - 1) * PCOLS + Cv] = 100;
+	mapPtr_3[(Fv + VFILS - 1) * PCOLS + Cv] = 100 + color;
 
 	// 4. Dibuixar marc inferior-dreta (101)
-	mapPtr_3[(Fv + VFILS - 1) * PCOLS + (Cv + VCOLS - 1)] = 101;
+	mapPtr_3[(Fv + VFILS - 1) * PCOLS + (Cv + VCOLS - 1)] = 101 + color;
 
 	// 5. Dibuixar marc superior (99) e inferior (97)
 	for (int col = Cv + 1; col < Cv + (VCOLS - 1); col++)
 	{
-        mapPtr_3[Fv * PCOLS + col] = 99;
-        mapPtr_3[(Fv + VFILS - 1) * PCOLS + col] = 97;
+        mapPtr_3[Fv * PCOLS + col] = 99 + color;
+        mapPtr_3[(Fv + VFILS - 1) * PCOLS + col] = 97 + color;
     }
 	// 6. Dibuixar marc esquerra (96) i dreta (98)
 	for (int fila = Fv + 1; fila < Fv + (VFILS - 1); fila++)
 	{
-        mapPtr_3[fila * PCOLS + Cv] = 96;
-		mapPtr_3[fila * PCOLS + (Cv + VCOLS - 1)] = 98;
+        mapPtr_3[fila * PCOLS + Cv] = 96 + color;
+		mapPtr_3[fila * PCOLS + (Cv + VCOLS - 1)] = 98 + color;
     }
 }
 
-/* _gg_iniGraf: inicializa el procesador gr�fico A para GARLIC 1.0 */
+/* _gg_iniGraf: inicializa el procesador grafico A para GARLIC 1.0 */
 void _gg_iniGrafA()
 {
-	videoSetMode(MODE_5_2D);	// Inicialitzar processador gr�fic principal (A) en mode 5
+	videoSetMode(MODE_5_2D);	// Inicialitzar processador grafic principal (A) en mode 5
 	lcdMainOnTop();				// Establir pantalla superior com a principal
 	
-	vramSetBankA(VRAM_A_MAIN_BG_0x06000000);	// Reservar banc de mem�ria de video A
+	vramSetBankA(VRAM_A_MAIN_BG_0x06000000);	// Reservar banc de memoria de video A
 
 	/* Inicialitzar fons grafic 2
 	 * ---
 	 * Especificacions generals:
-	 * Mida mapa = 64x48 posicions * 2 bytes/posicio = 6KB
-	 * Mida baldoses = 128 baldosas * 8x8 pixeles/baldosa * 1 byte/p�xel = 8KB
+	 *
+	 * Finestra = 32x24 (256x192 px) -> Total = 4x4 finestres (1024x768 px)
+	 * Mapa = (1024/8 X) x (1024/8 Y) = 128x128 baldoses = 16 KB
+	 * Mem. necessaria = Mapa x 2 bytes/pixel = 32 KB
+	 *
+	 * Mida baldoses = 128 baldosas * 8x8 pixels/baldosa * 1 byte/pixel = 8KB
 	 * Dir.ini mapa (norma) = VirtVRAM_Background + mapBase * 2Kbytes
 	 * Dir.ini baldoses = VirtVRAM_Background + tileBase * 16 Kbytes
 	 * ---
 	 * Dir.ini mapa = 0x06000000
-	 * Dir.ini baldoses = 0x06004000
+	 * Dir.ini baldoses = 0x06010000
 	*/
-	background_2 = bgInit(2, BgType_ExRotation, BgSize_ER_512x512, 0, 1);
+	background_2 = bgInit(2, BgType_ExRotation, BgSize_ER_1024x1024, 0, 4);
 	
 	/* Inicialitzar fons grafic 3
-	 * Dir.ini mapa = 0x06002000
-	 * Dir.ini baldoses = 0x06004000
+	 * Dir.ini mapa = 0x06008000
+	 * Dir.ini baldoses = 0x06010000
 	*/
-	background_3 = bgInit(3, BgType_ExRotation, BgSize_ER_512x512, 4, 1);
+	background_3 = bgInit(3, BgType_ExRotation, BgSize_ER_1024x1024, 16, 4);
 
 	// Prioritzar fons 3 > 2
 	bgSetPriority(background_2, 1);
@@ -152,10 +160,37 @@ void _gg_iniGrafA()
 	mapPtr_2 = bgGetMapPtr(background_2);
 	mapPtr_3 = bgGetMapPtr(background_3);
 
+	// Cada mapa de color ocupa 4096 bytes
+	// 128 baldoses * (64 pixels/baldosa / 2 bytes/pixel) = 4096 bytes
+	u16 *mapaColor = bgGetGfxPtr(background_3) + (128 * (64/2));
+	
+	// Copiar contingut garlic_fontTiles 3 cops per aconseguir les 128 baldoses amb els 4 colors diferents (blanc, groc, verd i roig)
+	for (int colorIndx = 0; colorIndx < 3; colorIndx++)
+	{
+	    // Descomprimir les baldoses originals (en blanc) al mapaColor actual
+		decompress(garlic_fontTiles, mapaColor, LZ77Vram);
+		
+		// Processar cada pixel de la baldosa de les 128 baldoses
+		for (int j = 0; j < 4096; j++)
+		{
+			if (mapaColor[j] & 0xFF00)	// Agafar valor bits alts (bits 15-8)
+			{
+				mapaColor[j] = (mapaColor[j] & 0x00FF);	// Eliminar valor bits alts
+				mapaColor[j] = (mapaColor[j] | (char_colors[colorIndx] << 8));	// Guardar el nou color als bits alts utilitzant l'index de color corresponent de char_colors (groc, verd i roig)
+			}
+			if (mapaColor[j] & 0x00FF)	// Agafar valor bits baixos (bits 7-0)
+			{
+				mapaColor[j] = (mapaColor[j] & 0xFF00);	// Eliminar valor bits baixos
+				mapaColor[j] = (mapaColor[j] | char_colors[colorIndx]);	// Guardar el nou color als bits baixos utilitzant l'index de color corresponent de char_colors (groc, verd i roig)
+			}
+		}
+		mapaColor += 4096;	// mapaColor++
+	}
+
 	// Generar els marcs del fons 3 a cada finestra
 	for (int i = 0; i < NVENT; i++)
 	{
-		_gg_generarMarco(i);
+		_gg_generarMarco(i, 3);	// Generar marcs amb color roig (proces inactiu) per defecte
 	}
 
 	/* Escalar fons 2 i 3
@@ -282,26 +317,28 @@ void _gg_procesarFormato(char *formato, unsigned int val1, unsigned int val2,
 	resultado[j] = '\0';
 }
 
-/* _gg_escribir: escribe una cadena de caracteres en la ventana indicada;
-	Parametros:
+/* _gg_escribir: escribe una cadena de carácteres en la ventana indicada;
+	Parámetros:
 		formato	->	string de formato:
-					admite '\n' (salto de linea), '\t' (tabulador, 4 espacios)
-					y codigos entre 32 y 159 (los 32 ultimos son caracteres
-					graficos), ademas de marcas de format %c, %d, %h y %s (m�x.
-					2 marcas por string)
+					admite '\n' (salto de línea), '\t' (tabulador, 4 espacios)
+					y códigos entre 32 y 159 (los 32 últimos son carácteres
+					gráficos), además de marcas de formato %c, %d, %h y %s (máx.
+					2 marcas por string) y de las marcas de cambio de color 
+					actual %0 (blanco), %1 (amarillo), %2 (verde) y %3 (rojo);
 		val1	->	valor a sustituir en la primera marca de formato, si existe
 		val2	->	valor a sustituir en la segunda marca de formato, si existe
-					- los valores pueden ser un codigo ASCII (%c), un valor
+					- los valores pueden ser un código ASCII (%c), un valor
 					  natural de 32 bits (%d, %x) o un puntero a string (%s)
-		ventana	->	numero de ventana (0..3)
+		ventana	->	número de ventana (0..3)
 */
 void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int ventana)
 {
 	char resultat[3 * VCOLS + 1];	// Resultat max 3 files (+1 sentinella)
 	
 	int pControl = _gd_wbfs[ventana].pControl;	// Llegir camp pControl de la finestra actual
-	int charPndt = pControl & 0xFFFF;			// Comptador de caracters fins emplenar el buffer (0,32) (16b)
-	int numLinea = pControl >> 16;				// Comptador sobre el numero de fila/linea actual (0,23) (16b)
+	int charPndt = pControl & 0xFFFF;			// Comptador de caracters fins emplenar el buffer (0,32) (16b baixos (0..15)
+	int numLinea = pControl >> 16 & 0xFFF;		// Comptador sobre el numero de fila/linea actual (0,23) (12b mitjans (27..16)
+	char color = pControl >> 28;				// Index de color (0, 3) (4b alts (31..28)
 	
 	// Convertir el string de format a text definitiu
 	_gg_procesarFormato(formato, val1, val2, resultat);
@@ -348,7 +385,12 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 		}
 		else	/* Altres casos */
 		{
-			if(charActual == '\t')	/* Cas tabulador */
+			if (charActual == '%' && resultat[i + 1] >= '0' && resultat[i + 1] <= '3') /* Cas marca de color */
+			{
+				color = resultat[i + 1] - '0';  // Actualitzar color actual - 0 (valor ASCII = 48)
+				i++; // Saltar al seguent caracter, ja s'ha llegit i + i+1
+			}
+			else if(charActual == '\t')	/* Cas tabulador */
 			{
 				// Calcular espais necessaris
 				int tab = 4 - (charPndt % 4);
@@ -358,34 +400,67 @@ void _gg_escribir(char *formato, unsigned int val1, unsigned int val2, int venta
 					_gd_wbfs[ventana].pChars[charPndt++] = ' '  - 32;	// Plenar buffer
 				}
 			}
-			else if(charActual >= '\x80' && charActual <= '\xFF')	/* Cas caracter custom (128-255 en hexa) */
+			else if(charActual >= '\x80' && charActual <= '\x87')	/* Cas caracter custom (128-135 en hexa) */
 			{
-				_gd_wbfs[ventana].pChars[charPndt++] = charActual;	// Guardar custom char
+				/* charActual + 128 * 3 per saltar els 3 colors + 8 * color per agafar el caracter amb el color pertinent */
+				_gd_wbfs[ventana].pChars[charPndt++] = charActual + 128 * 3 + (color == 0 ? 0 : (8 * color));
 			}
 			else	/* Cas caracter literal */
 			{
-				_gd_wbfs[ventana].pChars[charPndt++] = charActual - 32;
+				_gd_wbfs[ventana].pChars[charPndt++] = (charActual - 32) + 128 * color;
 			}
 		}
-		// Actualitzar variable pControl amb la linea actual i charPndt
-		_gd_wbfs[ventana].pControl = (numLinea << 16) | charPndt;
+		// Actualitzar variable pControl
+		_gd_wbfs[ventana].pControl = (color << 28) | (numLinea << 16) | charPndt;	// Color: 31..28 | numLinea 27..16 | charPndt 15..0
 		i++;
 	}
-	_gd_wbfs[ventana].pControl = (numLinea << 16) | charPndt;
+	_gd_wbfs[ventana].pControl = (color << 28) | (numLinea << 16) | charPndt;
 }
 
 
 /* _gg_setChar: escribe una cadena de caracteres en la ventana indicada;
 	Parametros:
-		n	->	numero de caracter ASCII Extended (entre 128 i 255)
+		n	->	numero de caracter ASCII Extended (entre 128 i 135)
 		buffer	->	punter a matriu de 8x8 bytes
 */
 void _gg_setChar(unsigned char n, unsigned char *buffer)
 {
-    if (n < 128 || n > 255) { return; }	// Comprovar n dins del rang
+    if (n < 128 || n > 135) { return; }	// Comprovar n dins del rang
 
-	// Calcular dir. base baldoses[n]
-    u16 * tileBaseAddress = bgGetGfxPtr(background_2) + (n * 32);
+    // Calcular dir. base baldoses[n] (4096 * 3 per saltar la paleta inicial amb totes les variants de color)
+    u16 *tileBaseAddress = bgGetGfxPtr(background_2) + (n * 32) + (4096 * 3);	
+
 	// Copiar el buffer (customChar) a la direccio de mem. de les baldoses (VRAM)
-	dmaCopy(buffer, tileBaseAddress, 64);
+    //dmaCopy(buffer, tileBaseAddress, 64);
+	_gs_copiaMem(buffer, tileBaseAddress, 64);
+
+	// Cada mapa de color custom ocupa 256 bytes
+	// 8 baldoses * (64 pixels/baldosa / 2 bytes/pixel) = 256 bytes    
+	u16 *colorTileBase = tileBaseAddress + (8 * 32); // Base de colores
+	
+    for (int colorIndx = 0; colorIndx < 3; colorIndx++)
+	{
+		// Copiar la baldosa original al mapa de color corresponent
+        //dmaCopy(tileBaseAddress, colorTileBase, 64);
+		_gs_copiaMem(tileBaseAddress, colorTileBase, 64);
+		
+        // Processar cada pixel de la baldosa
+        for (int i = 0; i < 32; i++)	// Procesar 32 pixels (16 bits per pixel)
+		{ 
+            u16 pixel = tileBaseAddress[i]; // Llegir pixel original
+            
+            // Verificar si el pixel es blanc en bits baixos o alts
+            if ((pixel & 0x00FF) == 0x00FF)
+			{
+                // Aplicar el nou color als bits baixos
+                colorTileBase[i] = (colorTileBase[i] & 0xFF00) | char_colors[colorIndx];
+            }
+            if ((pixel & 0xFF00) == 0xFF00)
+			{
+                // Aplicar el nou color als bits alts
+                colorTileBase[i] = (colorTileBase[i] & 0x00FF) | (char_colors[colorIndx] << 8);
+            }
+        }
+		colorTileBase += 256;
+    }
 }

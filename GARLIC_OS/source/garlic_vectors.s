@@ -1,6 +1,6 @@
 @;==============================================================================
 @;
-@;	"garlic_vector.s":	vector de direcciones de rutinas del API de GARLIC 1.0
+@;	"garlic_vector.s":	vector de direcciones de rutinas del API de GARLIC 2.0
 @;
 @;==============================================================================
 

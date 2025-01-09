@@ -1,150 +1,222 @@
 /*------------------------------------------------------------------------------
 
-	"main.c" : fase 1 / master
-	
+	"main.c" : fase 2 / ProgG
+
+	Programa de control del sistema operativo GARLIC, versión 2.0
+
 ------------------------------------------------------------------------------*/
 #include <nds.h>
+#include <stdlib.h>
 
-#include "garlic_system.h"	// definici�n de funciones y variables de sistema
-
-#include <GARLIC_API.h>		// inclusi�n del API para simular un proceso
-
-char error1, error2;		// variables para guardar el resultado de crearProc
+#include "garlic_system.h"	// definición de funciones y variables de sistema
 
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
-intFunc start;
-intFunc HOLA, PRNT, DIV1, SQR1, CUST, ORDH;
+const short divFreq2 = -33513982/(1024*4);	// frecuencia de TIMER2 = 4 Hz
 
-intFunc codiCarregarPrograma[20];	// Vector que guarda la dir de mem al carregar un programa o 0 en cas de error
+const char *argumentosDisponibles[4] = { "0", "1", "2", "3"};
+		// se supone que estos programas están disponibles en el directorio
+		// "Programas" de las estructura de ficheros de Nitrofiles
+const char *progs[7] = {"BORR","CRON","CUST","HOLA","PONG","PRNT","SQR1"};
+const unsigned char num_progs = 7;
 
 
-// Funcio generica per carregar programes
-intFunc carregarProg(unsigned int nomProg)
+/* Función para presentar una lista de opciones y escoger una: devuelve el índice de la opción
+		(0: primera opción, 1: segunda opción, etc.)
+		ATENCIóN: para que pueda funcionar correctamente, se supone que no habrá desplazamiento
+				  de las líneas de la ventana. */
+unsigned char escogerOpcion(char *opciones[], unsigned char num_opciones)
 {
-	_gg_escribir("*** Carga de programa %s.elf\n", nomProg, 0, 0);
-	start = _gm_cargarPrograma((char *) nomProg);
+	int fil_ini, j, sel, k;
+	
+	fil_ini = _gd_wbfs[_gi_za].pControl >> 16;		// fil_ini es índice fila inicial
+	for (j = 0; j < num_opciones; j++)			// mostrar opciones
+		_gg_escribir("%1( ) %s\n", (unsigned int) opciones[j], 0, _gi_za);
+
+	sel = -1;									// marca de no selección
+	j = 0;										// j es preselección
+	_gg_escribirCar(1, fil_ini, 10, 2, _gi_za);	// marcar preselección
+	do
+	{
+		_gp_WaitForVBlank();
+		scanKeys();
+		k = keysDown();				// leer botones
+		if (k != 0)
+			switch (k)
+			{
+				case KEY_UP:
+						if (j > 0)
+						{	_gg_escribirCar(1, fil_ini+j, 0, 2, _gi_za);
+							j--;
+							_gg_escribirCar(1, fil_ini+j, 10, 2, _gi_za);
+						}
+						break;
+				case KEY_DOWN:
+						if (j < num_opciones-1)
+						{	_gg_escribirCar(1, fil_ini+j, 0, 2, _gi_za);
+							j++;
+							_gg_escribirCar(1, fil_ini+j, 10, 2, _gi_za);
+						}
+						break;
+				case KEY_START:
+						sel = j;			// escoger preselección
+						break;
+			}
+	} while (sel == -1);
+	return sel;
+}
+
+
+/* Función para permitir seleccionar un programa entre los ficheros ELF
+		disponibles, así como un argumento para el programa (0, 1, 2 o 3) */
+void seleccionarPrograma()
+{
+	intFunc start;
+	int ind_prog, argumento, i;
+
+	i = 1;
+	while ((i < 16) &&	(_gd_pcbs[i].PID == 0))	// buscar si hay otro proceso en marcha
+	{
+		i++;
+	}
+	if (i < 16)						// en caso de encontrar otro proceso activo
+	{
+		_gd_pcbs[i].PID = 0;		// liberar su PCB
+		_gd_nReady = 0;				// eliminar cualquier proceso de cola de READY
+		_gg_escribir("* %3%d%0: proceso destruido\n", i, 0, 0);
+		_gg_escribirLineaTabla(i, (i == _gi_za ? 2 : 3));
+		if (i != _gi_za)			// si no se trata del propio zócalo actual
+			_gg_generarMarco(i, 3);
+	}
+	_gs_borrarVentana(_gi_za, 1);
+	_gg_escribir("%1*** Seleccionar programa :\n", 0, 0, _gi_za);
+	ind_prog = escogerOpcion((char **) progs, num_progs);
+	_gg_escribir("%1*** seleccionar argumento :\n", 0, 0, _gi_za);
+	argumento = escogerOpcion((char **) argumentosDisponibles, 4);
+	
+	start = _gm_cargarPrograma((char *) progs[ind_prog]);
 	if (start)
 	{
-		_gg_escribir("*** Direccion de arranque :\n\t\t%x\n", (unsigned int) start, 0, 0);
-		_gg_escribir("*** Pulse tecla \'START\' ::\n\n", 0, 0, 0);
-		do
-		{	_gp_WaitForVBlank();
-			scanKeys();
-		} while ((keysDown() & KEY_START) == 0);
-		
-		//start(val);
+		_gp_crearProc(start, _gi_za, (char *) progs[ind_prog], argumento);
+		_gg_escribir("%2* %d:%s.elf", _gi_za, (unsigned int) progs[ind_prog], 0);
+		_gg_escribir(" (%d)\n", argumento, 0, 0);
+		_gg_escribirLineaTabla(_gi_za, 2);
 	}
-	else
-		_gg_escribir("*** Programa \"%s\" NO cargado\n", nomProg, 0, 0);
-
-	return start;	// Retornar dir mem o 0 en cas de error
 }
+
+
+
+/* gestionSincronismos:	función para detectar cuándo un proceso ha terminado
+						su ejecución, consultando el bit i-éssimo de la
+						variable global _gd_sincMain; en caso de detección,
+						borra la línea del proceso del zócalo i-éssimo y pone
+						el bit de _gd_sincMain a cero.
+*/
+void gestionSincronismos()
+{
+	int i, mask;
+	
+	if (_gd_sincMain & 0xFFFE)		// si hay algun sincronismo pendiente
+	{
+		mask = 2;
+		for (i = 1; i <= 15; i++)
+		{
+			if (_gd_sincMain & mask)
+			{	// actualizar visualización de tabla de zócalos
+				_gg_escribirLineaTabla(i, (i == _gi_za ? 2 : 3));
+				if (i != _gi_za)			// si no se trata del propio zócalo actual
+					_gg_generarMarco(i, 3);
+				_gg_escribir("%3* %d: proceso terminado\n", i, 0, 0);
+				_gd_sincMain &= ~mask;		// poner bit a cero
+			}
+			mask <<= 1;
+		}
+	}
+}
+
 
 
 /* Inicializaciones generales del sistema Garlic */
 //------------------------------------------------------------------------------
 void inicializarSistema() {
 //------------------------------------------------------------------------------
-	int v;
 
-	_gg_iniGrafA();			// inicializar procesador grafico A
-	for (v = 0; v < 4; v++)	// para todas las ventanas
-		_gd_wbfs[v].pControl = 0;		// inicializar los buffers de ventana
+	_gd_seed = *punixTime;	// inicializar semilla para números aleatorios con
+	_gd_seed <<= 16;		// el valor de tiempo real UNIX, desplazado 16 bits
+	
+	_gd_pcbs[0].keyName = 0x4C524147;	// "GARL"
+	
+	_gg_iniGrafA();					// inicializar gráficos
+	_gs_iniGrafB();
+	_gs_dibujarTabla();
+	
+	_gi_redibujarZocalo(1);			// marca tabla de zócalos con el proceso
+									// del S.O. seleccionado (en verde)
 	
 	if (!_gm_initFS())
-	{
-		_gg_escribir("ERROR: no se puede inicializar el sistema de ficheros!", 0, 0, 0);
+	{	_gg_escribir("%3ERROR: ¡no se puede utilizar sistema de ficheros!", 0, 0, 0);
 		exit(0);
 	}
-	
-	_gd_seed = *punixTime;	// inicializar semilla para numeros aleatorios con
-	_gd_seed <<= 16;		// el valor de tiempo real UNIX, desplazado 16 bits
 
 	irqInitHandler(_gp_IntrMain);	// instalar rutina principal interrupciones
 	irqSet(IRQ_VBLANK, _gp_rsiVBL);	// instalar RSI de vertical Blank
 	irqEnable(IRQ_VBLANK);			// activar interrupciones de vertical Blank
-	REG_IME = IME_ENABLE;			// activar las interrupciones en general
-	
-	_gd_pcbs[0].keyName = 0x4C524147;	// "GARL"
-	
-	for(int i = 0; i < 8; i++)
-		_gd_sem[i] = 1;
-}
 
+	irqSet(IRQ_TIMER2, _gg_rsiTIMER2);
+	irqEnable(IRQ_TIMER2);			// instalar la RSI para el TIMER2
+	TIMER2_DATA = divFreq2; 
+	TIMER2_CR = 0xC3;  		// Timer Start | IRQ Enabled | Prescaler 3 (F/1024)
+
+	irqSet(IRQ_VCOUNT, _gi_movimientoVentanas);
+	REG_DISPSTAT |= 0xE620;			// fijar linea VCOUNT a 230 y activar int.
+	irqEnable(IRQ_VCOUNT);			// de VCOUNT
+	
+	REG_IME = IME_ENABLE;			// activar las interrupciones en general
+}
 
 //------------------------------------------------------------------------------
 int main(int argc, char **argv) {
 //------------------------------------------------------------------------------
-	
+	int key;
+
 	inicializarSistema();
 	
-	_gg_escribir("********************************", 0, 0, 0);
-	_gg_escribir("*                              *", 0, 0, 0);
-	_gg_escribir("* Sistema Operativo GARLIC 1.0 *", 0, 0, 0);
-	_gg_escribir("*                              *", 0, 0, 0);
-	_gg_escribir("********************************", 0, 0, 0);
-	_gg_escribir("*** Inicio fase 1_GPM\n", 0, 0, 0);
+	_gg_escribir("%1********************************", 0, 0, 0);
+	_gg_escribir("%1*                              *", 0, 0, 0);
+	_gg_escribir("%1* Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
+	_gg_escribir("%1*                              *", 0, 0, 0);
+	_gg_escribir("%1********************************", 0, 0, 0);
+	_gg_escribir("%1*** Inicio fase 2 / ProgG\n", 0, 0, 0);
 	
-	// PROG M: Carregar programes a memoria
-	
-	codiCarregarPrograma[0] = carregarProg((unsigned int) "HOLA");
-	codiCarregarPrograma[1] = carregarProg((unsigned int) "PRNT");
-	codiCarregarPrograma[2] = carregarProg((unsigned int) "DIV1");
-	codiCarregarPrograma[3] = carregarProg((unsigned int) "ORDH");
-	codiCarregarPrograma[4] = carregarProg((unsigned int) "SQR1");
-	//codiCarregarPrograma[5] = carregarProg((unsigned int) "CUST");	// Falta fase 2 prog M (2 segments)
+	/* TEST _gg_escribirMat */
+	char mat[8][8] =
+	{
+		{ 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47 },
+		{ 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37 },
+		{ 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27 },
+		{ 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57 },
+		{ 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67 },
+		{ 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77 },
+		{ 0x5A, 0x5B, 0x5C, 0x5D, 0x5E, 0x5F, 0x60, 0x61 },
+		{ 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F, 0x70, 0x71 },
+	};
 
-	// PROG_P: Crear processos per executar els programes .elf
-	
-	if(codiCarregarPrograma[0] != 0)
-	{
-		_gp_crearProc(codiCarregarPrograma[0], 7, "HOLA", 1);
-	}
-	if(codiCarregarPrograma[1] != 0)
-	{
-		_gp_crearProc(codiCarregarPrograma[1], 5, "PRNT", 2);
-	}
-	if(codiCarregarPrograma[2] != 0)
-	{
-		_gp_crearProc(codiCarregarPrograma[2], 6, "DIV1", 1);
-	}
-	if(codiCarregarPrograma[3] != 0)
-	{
-		_gp_crearProc(codiCarregarPrograma[3], 10, "ORDH", 1);
-	}
-	if(codiCarregarPrograma[4] != 0)
-	{
-		_gp_crearProc(codiCarregarPrograma[4], 11, "SQR1", 1);
-	}
-	if(codiCarregarPrograma[5] != 0)
-	{
-		//_gp_crearProc(codiCarregarPrograma[5], 8, "CUST", 0);				// Falta fase 2 prog M (2 segments)
-	}
-	
-	// PROG_P: Prova disponibilitat del zocalo
-	_gg_escribir("*** Prova d'errors\n", 0, 0, 0);					// pruebas de los 2 posibles errores que puede dar crearProc
-	
-	error1 = _gp_crearProc(codiCarregarPrograma[0], 7, "HOLA", 0);
-	if (error1 == 2)
-		_gg_escribir("El zocalo esta ocupat\n", 0, 0, 0);
-		
-	error2 = _gp_crearProc(codiCarregarPrograma[0], 0, "HOLA", 0);
-	if (error2 == 1)
-		_gg_escribir("El zocalo esta reservat\n", 0, 0, 0);
-	
-	while (_gp_numProc() > 1)	// esperar a que terminen los procesos de usuario
-	{
-		_gp_WaitForVBlank();
-		//_gg_escribir("*** Test %d:%d\n", _gd_tickCount, _gp_numProc(), 1);
-	}
+	_gg_escribirMat(1, 15, mat, 1, 10);
+	_gg_escribirMat(10, 10, mat, 2, 11);
+	_gg_escribirMat(20, 15, mat, 3, 14);
+	_gg_escribirMat(5, 12, mat, 0, 15);
 
-	_gg_escribir("*** Final fase 1_GPM\n", 0, 0, 0);
-
-	while (1)
+	while (1)						// bucle infinito
 	{
-		_gp_WaitForVBlank();
+		scanKeys();
+		key = keysDown();			// leer botones y controlar la interfaz
+		if (key != 0)				// de usuario
+		{	_gi_controlInterfaz(key);
+			if ((key == KEY_START) && (_gi_za != 0))
+				seleccionarPrograma();
+		}
+		gestionSincronismos();
+		_gp_WaitForVBlank();		// retardo del proceso de sistema
 	}
-	
-	return 0;
+	return 0;			
 }

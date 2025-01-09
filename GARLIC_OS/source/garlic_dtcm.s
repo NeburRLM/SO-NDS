@@ -48,4 +48,14 @@ _gd_stacks:	.space 15 * 128 * 4
 	.global _gd_sem				@; Vector de semaforos globales tipo mutex
 _gd_sem: .space 8
 
+	.global _gd_bufferZ			@; PROG_G - Buffer per poder convertir el zocalo Z de num a STR
+_gd_bufferZ: .space 3			@; Objectiu: Poder escriure Z en la pantalla inferior de la NDS (_gg_escribirLineaTabla)
+
+	.global _gd_bufferPID			@; PROG_G - Buffer per poder convertir el PID de num a STR
+_gd_bufferPID: .space 3			@; Objectiu: Poder escriure PID en la pantalla inferior de la NDS (_gg_escribirLineaTabla)
+
+	.global _gd_bufferPC			@; PROG_G - Buffer per poder convertir el PC de num a STR
+_gd_bufferPC: .space 9			@; Objectiu: Poder escriure PC en la pantalla inferior de la NDS (_gg_escribirLineaTabla)
+
+
 .end

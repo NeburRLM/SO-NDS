@@ -1,6 +1,6 @@
 @;==============================================================================
 @;
-@;	"garlic_itcm_api.s":	código de las rutinas del API de GARLIC 1.0
+@;	"garlic_itcm_api.s":	código de las rutinas del API de GARLIC 2.0
 @;							(ver "GARLIC_API.h" para descripción de las
 @;							 funciones correspondientes)
 @;
@@ -130,30 +130,23 @@ _ga_printf:
 	bl _gg_escribir			@; llamada a la función definida en "garlic_graf.c"
 	pop {r4, pc}
 	
-
-	.global _ga_setchar
+    .global _ga_setchar
 	@;Parámetros
-	@; R0: n (numero de caracter ASCII Extended, entre 128 i 255)
+	@; R0: n (numero de caracter ASCII Extended, entre 128 i 135)
 	@; R1: buffer (punter a matriu de 8x8 bytes)
 _ga_setchar:
-    push {r4, lr}
-	
-	@; Comprovar si R0 esta dins del rang (128-255)
+	push {r4, lr}             @; Guardar registros usados
+
+	@; Comprovar si R0 esta dins del rang (128-135)
 	cmp r0, #128
 	blt .Lend_setChar
-	cmp r0, #255
+	cmp r0, #135
     bgt .Lend_setChar
-	
-	@; Per calcular la ventana de sortida
-	ldr r4, =_gd_pidz		@; R4 = dirección _gd_pidz
-	ldr r3, [r4]
-	and r3, #0x3			@; R3 = ventana de salida (zócalo actual MOD 4)
-	
+
 	bl _gg_setChar	@; Si n correcte, processar buffer
-	
 .Lend_setChar:
 	pop {r4, pc}
-	
+
 	.global _ga_wait
 _ga_wait:
 	push {r1-r3, lr}
@@ -271,7 +264,7 @@ _ga_delay:
 .Ldelay1:
 	cmp r0, #600
 	movhi r0, #600			@; limitar el número de segundos a 600 (10 minutos)
-	bl _gp_retardarProc
+	@;bl _gp_retardarProc
 .Ldelay2:
 	pop {r2-r3, pc}
 
