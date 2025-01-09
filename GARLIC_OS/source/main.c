@@ -124,29 +124,27 @@ unsigned char escogerOpcion(char *opciones[], unsigned char num_opciones)
 void seleccionarPrograma()
 {
 	intFunc start;
-	int ind_prog, argumento, i;
+	int ind_prog, argumento;
 
-	i = 1;
-	while ((i < 16) &&	(_gd_pcbs[i].PID == 0))	// buscar si hay otro proceso en marcha
+	// Verificar si ya hay un proceso en el zócalo actual
+	if (_gd_pcbs[_gi_za].PID != 0)	// Si hay un proceso en el zócalo actual
 	{
-		i++;
+		_gp_matarProc(_gi_za);				// Matar el proceso actual
+		_gm_liberarMem(_gi_za);				// Liberar la memoria del proceso		
+		_gg_escribir("* %3%d%0: proceso destruido\n", _gi_za, 0, 0);
+		_gg_escribirLineaTabla(_gi_za, 3);	// Actualizar la línea de la tabla
 	}
-	if (i < 16)						// en caso de encontrar otro proceso activo
-	{
-		//_gp_matarProc(i);					// matar proceso i
-		//_gm_liberarMem(i);	// liberar la memoria del proceso terminado
 
-		_gg_escribir("* %3%d%0: proceso destruido\n", i, 0, 0);
-		_gg_escribirLineaTabla(i, (i == _gi_za ? 2 : 3));
-		if (i != _gi_za)			// si no se trata del propio zócalo actual
-			_gg_generarMarco(i, 3);
-	}
+	// Limpiar la ventana del zócalo actual
 	_gs_borrarVentana(_gi_za, 1);
+
+	// Seleccionar programa y argumento
 	_gg_escribir("%1*** Seleccionar programa :\n", 0, 0, _gi_za);
-	ind_prog = escogerOpcion((char **) progs, num_progs);
+	ind_prog = escogerOpcion((char **)progs, num_progs);
 	_gg_escribir("%1*** seleccionar argumento :\n", 0, 0, _gi_za);
-	argumento = escogerOpcion((char **) argumentosDisponibles, 4);
-	
+	argumento = escogerOpcion((char **)argumentosDisponibles, 4);
+
+	// Cargar el programa seleccionado
 	start = _gm_cargarPrograma(_gi_za, (char *) progs[ind_prog]);
 	if (start)
 	{

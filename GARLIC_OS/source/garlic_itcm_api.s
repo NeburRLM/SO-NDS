@@ -337,7 +337,7 @@ _ga_delay:
 	b .Ldelay2				@; y salta al final de la rutina
 .Ldelay1:
 	cmp r0, #600
-	movhi r0, #600			@; limitar el nï¿½mero de segundos a 600 (10 minutos)
+	movhi r0, #600			@; limitar el numero de segundos a 600 (10 minutos)
 	bl _gp_retardarProc
 .Ldelay2:
 	pop {r2-r3, pc}
