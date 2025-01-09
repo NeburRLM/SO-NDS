@@ -126,8 +126,10 @@ _ga_printf:
 	push {r4, lr}
 	ldr r4, =_gd_pidz		@; R4 = direcci�n _gd_pidz
 	ldr r3, [r4]
+
 	and r3, #0xf			@; R3 = ventana de salida (z�calo actual MOD 16)
 	bl _gg_escribir			@; llamada a la funci�n definida en "garlic_graf.c"
+
 	pop {r4, pc}
 	
     .global _ga_setchar
@@ -284,7 +286,7 @@ _ga_fclose:
 
 
 	.global _ga_printchar
-	@;Parámetros
+	@;ParÃ¡metros
 	@; R0: int vx
 	@; R1: int vy
 	@; R2: char c
@@ -294,13 +296,14 @@ _ga_printchar:
 	mov r6, r0
 	mov r7, r1
 	mov r8, r2
-	ldr r5, =_gd_pidz		@; R5 = dirección _gd_pidz
+	ldr r5, =_gd_pidz		@; R5 = direcciÃ³n _gd_pidz
 	ldr r4, [r5]
-	and r4, #0xf			@; R4 = ventana de salida (zócalo actual)
-	push {r4}				@; pasar 4º parámetro (núm. ventana) por la pila
+	and r4, #0xf			@; R4 = ventana de salida (zÃ³calo actual)
+	push {r4}				@; pasar 4Âº parÃ¡metro (nÃºm. ventana) por la pila
 	bl _gg_escribirCar
-	add sp, #4				@; eliminar 4º parámetro de la pila
+	add sp, #4				@; eliminar 4Âº parÃ¡metro de la pila
 	pop {r4-r8, pc}
+
 
 	.align 2
 	.global _ga_printmat
@@ -311,12 +314,12 @@ _ga_printchar:
 	@; R3: int color
 _ga_printmat:
 	push {r4-r5, lr}
-	ldr r5, =_gd_pidz		@; R5 = dirección _gd_pidz
+	ldr r5, =_gd_pidz		@; R5 = direcciÃ³n _gd_pidz
 	ldr r4, [r5]
-	and r4, #0xf			@; R4 = ventana de salida (zócalo actual)
-	push {r4}				@; pasar 4º parámetro (núm. ventana) por la pila
+	and r4, #0xf			@; R4 = ventana de salida (zÃ³calo actual)
+	push {r4}				@; pasar 4Âº parÃ¡metro (nÃºm. ventana) por la pila
 	bl _gg_escribirMat
-	add sp, #4				@; eliminar 4º parámetro de la pila
+	add sp, #4				@; eliminar 4Âº parÃ¡metro de la pila
 	pop {r4-r5, pc}
 
 
@@ -325,16 +328,16 @@ _ga_printmat:
 	@; R0: int nsec
 _ga_delay:
 	push {r2-r3, lr}
-	ldr r3, =_gd_pidz		@; R3 = direcci�n _gd_pidz
+	ldr r3, =_gd_pidz		@; R3 = direcciï¿½n _gd_pidz
 	ldr r2, [r3]
-	and r2, #0xf			@; R2 = z�calo actual
+	and r2, #0xf			@; R2 = zï¿½calo actual
 	cmp r0, #0
 	bhi .Ldelay1
 	bl _gp_WaitForVBlank	@; si nsec = 0, solo desbanca el proceso
 	b .Ldelay2				@; y salta al final de la rutina
 .Ldelay1:
 	cmp r0, #600
-	movhi r0, #600			@; limitar el n�mero de segundos a 600 (10 minutos)
+	movhi r0, #600			@; limitar el nï¿½mero de segundos a 600 (10 minutos)
 	bl _gp_retardarProc
 .Ldelay2:
 	pop {r2-r3, pc}
@@ -345,11 +348,17 @@ _ga_clear:
 	push {r0-r1, lr}
 	ldr r1, =_gd_pidz
 	ldr r0, [r1]
-	and r0, #0xf			@; R0 = z�calo actual
+	and r0, #0xf			@; R0 = zï¿½calo actual
 	mov r1, #1				@; R1 = 1 -> 16 ventanas
 	bl _gs_borrarVentana
 	pop {r0-r1, pc}
 
+
+.global _ga_fwrite
+_ga_fwrite:
+	push {lr}
+	bl _gm_fwrite
+	pop {pc}
 
 .end
 

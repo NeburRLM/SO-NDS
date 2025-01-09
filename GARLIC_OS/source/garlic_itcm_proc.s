@@ -1,7 +1,7 @@
 @;==============================================================================
 @;
-@;	"garlic_itcm_proc.s":	cÛdigo de las rutinas de control de procesos (1.0)
-@;						(ver "garlic_system.h" para descripciÛn de rutinas)
+@;	"garlic_itcm_proc.s":	c√≥digo de las rutinas de control de procesos (1.0)
+@;						(ver "garlic_system.h" para descripci√≥n de rutinas)
 @;
 @;==============================================================================
 
@@ -11,14 +11,14 @@
 	.align 2
 	
 	.global _gp_WaitForVBlank
-	@; rutina para pausar el procesador mientras no se produzca una interrupciÛn
+	@; rutina para pausar el procesador mientras no se produzca una interrupci√≥n
 	@; de retroceso vertical (VBL); es un sustituto de la "swi #5" que evita
 	@; la necesidad de cambiar a modo supervisor en los procesos GARLIC;
 _gp_WaitForVBlank:
 	push {r0-r1, lr}
 	ldr r0, =__irq_flags
 .Lwait_espera:
-	mcr p15, 0, lr, c7, c0, 4	@; HALT (suspender hasta nueva interrupciÛn)
+	mcr p15, 0, lr, c7, c0, 4	@; HALT (suspender hasta nueva interrupci√≥n)
 	ldr r1, [r0]			@; R1 = [__irq_flags]
 	tst r1, #1				@; comprobar flag IRQ_VBL
 	beq .Lwait_espera		@; repetir bucle mientras no exista IRQ_VBL
@@ -32,36 +32,36 @@ _gp_WaitForVBlank:
 _gp_IntrMain:
 	mov	r12, #0x4000000
 	add	r12, r12, #0x208	@; R12 = base registros de control de interrupciones	
-	ldr	r2, [r12, #0x08]	@; R2 = REG_IE (m·scara de bits con int. permitidas)
-	ldr	r1, [r12, #0x0C]	@; R1 = REG_IF (m·scara de bits con int. activas)
+	ldr	r2, [r12, #0x08]	@; R2 = REG_IE (m√°scara de bits con int. permitidas)
+	ldr	r1, [r12, #0x0C]	@; R1 = REG_IF (m√°scara de bits con int. activas)
 	and r1, r1, r2			@; filtrar int. activas con int. permitidas
 	ldr	r2, =irqTable
-.Lintr_find:				@; buscar manejadores de interrupciones especÌficos
-	ldr r0, [r2, #4]		@; R0 = m·scara de int. del manejador indexado
-	cmp	r0, #0				@; si m·scara = cero, fin de vector de manejadores
-	beq	.Lintr_setflags		@; (abandonar bucle de b˙squeda de manejador)
+.Lintr_find:				@; buscar manejadores de interrupciones espec√≠ficos
+	ldr r0, [r2, #4]		@; R0 = m√°scara de int. del manejador indexado
+	cmp	r0, #0				@; si m√°scara = cero, fin de vector de manejadores
+	beq	.Lintr_setflags		@; (abandonar bucle de b√∫squeda de manejador)
 	ands r0, r0, r1			@; determinar si el manejador indexado atiende a una
 	beq	.Lintr_cont1		@; de las interrupciones activas
-	ldr	r3, [r2]			@; R3 = direcciÛn de salto del manejador indexado
+	ldr	r3, [r2]			@; R3 = direcci√≥n de salto del manejador indexado
 	cmp	r3, #0
-	beq	.Lintr_ret			@; abandonar si direcciÛn = 0
-	mov r2, lr				@; guardar direcciÛn de retorno
+	beq	.Lintr_ret			@; abandonar si direcci√≥n = 0
+	mov r2, lr				@; guardar direcci√≥n de retorno
 	blx	r3					@; invocar el manejador indexado
-	mov lr, r2				@; recuperar direcciÛn de retorno
-	b .Lintr_ret			@; salir del bucle de b˙squeda
+	mov lr, r2				@; recuperar direcci√≥n de retorno
+	b .Lintr_ret			@; salir del bucle de b√∫squeda
 .Lintr_cont1:	
-	add	r2, r2, #8			@; pasar al siguiente Ìndice del vector de
-	b	.Lintr_find			@; manejadores de interrupciones especÌficas
+	add	r2, r2, #8			@; pasar al siguiente √≠ndice del vector de
+	b	.Lintr_find			@; manejadores de interrupciones espec√≠ficas
 .Lintr_ret:
-	mov r1, r0				@; indica quÈ interrupciÛn se ha servido
+	mov r1, r0				@; indica qu√© interrupci√≥n se ha servido
 .Lintr_setflags:
-	str	r1, [r12, #0x0C]	@; REG_IF = R1 (comunica interrupciÛn servida)
-	ldr	r0, =__irq_flags	@; R0 = direcciÛn flags IRQ para gestiÛn IntrWait
+	str	r1, [r12, #0x0C]	@; REG_IF = R1 (comunica interrupci√≥n servida)
+	ldr	r0, =__irq_flags	@; R0 = direcci√≥n flags IRQ para gesti√≥n IntrWait
 	ldr	r3, [r0]
-	orr	r3, r3, r1			@; activar el flag correspondiente a la interrupciÛn
+	orr	r3, r3, r1			@; activar el flag correspondiente a la interrupci√≥n
 	str	r3, [r0]			@; servida (todas si no se ha encontrado el maneja-
 							@; dor correspondiente)
-	mov	pc,lr				@; retornar al gestor de la excepciÛn IRQ de la BIOS
+	mov	pc,lr				@; retornar al gestor de la excepci√≥n IRQ de la BIOS
 
 
 	.global _gp_rsiVBL
@@ -80,7 +80,7 @@ _gp_rsiVBL:
 		ldr r4, =_gd_pidz
 		ldr r4, [r4]
 		mov r5, #0xF
-		and r4, r4, r5			@;r4 = n∫ zocalo
+		and r4, r4, r5			@;r4 = n¬∫ zocalo
 		ldr r6, =_gd_pcbs		
 		mov r5, #24
 		mla r7, r5, r4, r6		@;r5 = inicio de la tabla de pcbs del zocalo
@@ -126,12 +126,12 @@ _gp_rsiVBL:
 
 	@; Rutina para salvar el estado del proceso interrumpido en la entrada
 	@; correspondiente del vector _gd_pcbs[];
-	@;Par·metros
-	@; R4: direcciÛn _gd_nReady
-	@; R5: n˙mero de procesos en READY
-	@; R6: direcciÛn _gd_pidz
+	@;Par√°metros
+	@; R4: direcci√≥n _gd_nReady
+	@; R5: n√∫mero de procesos en READY
+	@; R6: direcci√≥n _gd_pidz
 	@;Resultado
-	@; R5: nuevo n˙mero de procesos en READY (+1)
+	@; R5: nuevo n√∫mero de procesos en READY (+1)
 _gp_salvarProc:
 	push {r8-r11, lr}
 		@; miramos si el proceso debe ir a la cola de Delay o a la de Ready
@@ -141,7 +141,7 @@ _gp_salvarProc:
 		and r8, r8, #0xF			@; cogemos solo el numero de zocalo
 		b .LsaltarR
 		
-		@; guardamos el numero de zocalo en la ultima posiciÛn de la cola de ready
+		@; guardamos el numero de zocalo en la ultima posici√≥n de la cola de ready
 		.LesReady:
 			ldr r8, [r6]				@; sabemos que _gd_pidz => PID + num. zocalo
 			and r8, #0xf				@; num. zocalo
@@ -155,25 +155,25 @@ _gp_salvarProc:
 		ldr r9, =_gd_pcbs
 		mov r10, #24
 		mla r11, r10, r8, r9		@; direccion del pcb del proceso
-		ldr r10, [r13, #60]			@; en r13 esta el SP i r15 (PC) esta en la posiciÛn m·s baja (60)
+		ldr r10, [r13, #60]			@; en r13 esta el SP i r15 (PC) esta en la posici√≥n m√°s baja (60)
 		str r10, [r11, #4]
 		
 		@; guardamos el CPSR del proceso a desbancar
 		mrs r10, SPSR				@; cogemos el SPSR porque es donde se ha guardado el CPSR del proceso a desbancar
 		str r10, [r11, #12]
 		
-		@; cambiamos el modo de ejecuciÛn a system
+		@; cambiamos el modo de ejecuci√≥n a system
 		mov r8, r13
 		mrs r10, CPSR
-		and r10, #0xFFFFFFE0		@; ponemos a 0 los ultimos 5 bits que son los que indican el modo de ejecuciÛn
-		orr r10, #0x1F				@; ponemos estos 5 bits a 1 para aplicar el nuevo modo de ejecuciÛn
+		and r10, #0xFFFFFFE0		@; ponemos a 0 los ultimos 5 bits que son los que indican el modo de ejecuci√≥n
+		orr r10, #0x1F				@; ponemos estos 5 bits a 1 para aplicar el nuevo modo de ejecuci√≥n
 		msr CPSR, r10
 		
 		sub r13, #56				@; nos ponemos al inicio de la zona de la pila del usuario
 		
 		@; apilamos el valor de los registros
 		@; cogemos los valores de la pila del modo irq (r8 -> SP)
-		@; los guardamos cogiendo la direcciÛn que hay en r13 (SP)
+		@; los guardamos cogiendo la direcci√≥n que hay en r13 (SP)
 		ldr r10, [r8, #40]
 		str r10, [r13]
 		
@@ -228,10 +228,10 @@ _gp_salvarProc:
 
 
 	@; Rutina para restaurar el estado del siguiente proceso en la cola de READY;
-	@;Par·metros
-	@; R4: direcciÛn _gd_nReady
-	@; R5: n˙mero de procesos en READY
-	@; R6: direcciÛn _gd_pidz
+	@;Par√°metros
+	@; R4: direcci√≥n _gd_nReady
+	@; R5: n√∫mero de procesos en READY
+	@; R6: direcci√≥n _gd_pidz
 _gp_restaurarProc:
 	push {r8-r11, lr}
 		@; recuperamos el numero de zocalo
@@ -329,7 +329,7 @@ _gp_restaurarProc:
 	pop {r8-r11, pc}
 
 	@; Rutina para actualizar la cola de procesos retardados, poniendo en
-	@; cola de READY aquellos cuyo n˙mero de tics de retardo sea 0
+	@; cola de READY aquellos cuyo n√∫mero de tics de retardo sea 0
 _gp_actualizarDelay:
 	push {r0-r9, lr}
 	ldr r0, =_gd_qDelay
@@ -346,7 +346,7 @@ _gp_actualizarDelay:
 		ldr r6, =0xFFFFFF	@; mascara para coger los 24 bits bajos
 		and r7, r5, r6
 		cmp r7, r6			@; si los 24 bits estan a 1 significa que es bloqueo por semaforo
-		addeq r3, #4		@; aÒadimos 4 porque son int's
+		addeq r3, #4		@; a√±adimos 4 porque son int's
 		addeq r4, #1
 		beq .LdecrTic
 		sub r5, #1			@; restamos 1 tic
@@ -402,23 +402,23 @@ _gp_actualizarDelay:
 
 	.global _gp_numProc
 	@;Resultado
-	@; R0: n˙mero de procesos total
+	@; R0: n√∫mero de procesos total
 _gp_numProc:
 	push {r1-r2, lr}
 	mov r0, #1				@; contar siempre 1 proceso en RUN
 	ldr r1, =_gd_nReady
-	ldr r2, [r1]			@; R2 = n˙mero de procesos en cola de READY
-	add r0, r2				@; aÒadir procesos en READY
+	ldr r2, [r1]			@; R2 = n√∫mero de procesos en cola de READY
+	add r0, r2				@; a√±adir procesos en READY
 	ldr r1, =_gd_nDelay
-	ldr r2, [r1]			@; R2 = n˙mero de procesos en cola de DELAY
-	add r0, r2				@; aÒadir procesos retardados
+	ldr r2, [r1]			@; R2 = n√∫mero de procesos en cola de DELAY
+	add r0, r2				@; a√±adir procesos retardados
 	pop {r1-r2, pc}
 
 
 	.global _gp_crearProc
-	@; prepara un proceso para ser ejecutado, creando su entorno de ejecuciÛn y
-	@; coloc·ndolo en la cola de READY;
-	@;Par·metros
+	@; prepara un proceso para ser ejecutado, creando su entorno de ejecuci√≥n y
+	@; coloc√°ndolo en la cola de READY;
+	@;Par√°metros
 	@; R0: intFunc funcion
 	@; R1: int zocalo
 	@; R2: char *nombre
@@ -433,7 +433,7 @@ _gp_crearProc:
 		beq .LfinalCP
 		@; para mirar si el zocalo esta ocupado miraremos el vector de _gd_pcbs
 		ldr r4, =_gd_pcbs
-		mov r5, #24		@; 24 => 6 int's del registro * 4 (ocupaciÛn de un int)
+		mov r5, #24		@; 24 => 6 int's del registro * 4 (ocupaci√≥n de un int)
 		mla r6, r5, r1, r4	@; multiplicamos r5 i r1 para saber el desplazamiento para llegar al PID del zocalo que queremos ver y le sumamos r4 que es la direccion inicial del vector de pcbs
 		ldr r5, [r6]
 		@; si el PID es 0 significa que esta libre, sino significa que esta ocupado
@@ -450,7 +450,7 @@ _gp_crearProc:
 		str r7, [r5]
 		str r7, [r6]
 		bl _gp_desinhibirIRQs
-		@; guardamos la direcciÛn de la rutina inicial del proceso (r0)
+		@; guardamos la direcci√≥n de la rutina inicial del proceso (r0)
 		@; compensamos el decremento
 		add r0, #4
 		str r0, [r6, #4]
@@ -484,11 +484,11 @@ _gp_crearProc:
 			add r9, #4
 			cmp r9, #48
 			ble .LomplirRx
-		@; guardamos en r14 la direcciÛn de la rutina _gp_terminarProc
+		@; guardamos en r14 la direcci√≥n de la rutina _gp_terminarProc
 		ldr r8, =_gp_terminarProc
 		str r8, [r7, #52]
 		
-		@; guardamos en el vector de pcbs la direcciÛn incial de la pila que es donde estan guardados los registros
+		@; guardamos en el vector de pcbs la direcci√≥n incial de la pila que es donde estan guardados los registros
 		str r7, [r6, #8]
 		
 		@; guardamos el valor incial del CPSR en el campo Status del vector de pcbs
@@ -499,7 +499,7 @@ _gp_crearProc:
 		ldr r8, =_gd_qReady
 		ldr r9, =_gd_nReady
 		ldr r10, [r9]
-		@; es importante que si aÒadimos el proceso a la cola de ready nReady aumente en 1 para mantener la consistencia
+		@; es importante que si a√±adimos el proceso a la cola de ready nReady aumente en 1 para mantener la consistencia
 		bl _gp_inhibirIRQs
 		strb r1, [r8, r10]
 		@;incrementamos la variable _gd_nReady
@@ -519,27 +519,27 @@ _gp_crearProc:
 
 
 @; Rutina para terminar un proceso de usuario:
-	@; pone a 0 el campo PID del PCB del zÛcalo actual, para indicar que esa
-	@; entrada del vector _gd_pcbs est· libre; tambiÈn pone a 0 el PID de la
-	@; variable _gd_pidz (sin modificar el n˙mero de zÛcalo), para que el cÛdigo
-	@; de multiplexaciÛn de procesos no salve el estado del proceso terminado.
+	@; pone a 0 el campo PID del PCB del z√≥calo actual, para indicar que esa
+	@; entrada del vector _gd_pcbs est√° libre; tambi√©n pone a 0 el PID de la
+	@; variable _gd_pidz (sin modificar el n√∫mero de z√≥calo), para que el c√≥digo
+	@; de multiplexaci√≥n de procesos no salve el estado del proceso terminado.
 _gp_terminarProc:
 	ldr r0, =_gd_pidz
-	ldr r1, [r0]			@; R1 = valor actual de PID + zÛcalo
-	and r1, r1, #0xf		@; R1 = zÛcalo del proceso desbancado
+	ldr r1, [r0]			@; R1 = valor actual de PID + z√≥calo
+	and r1, r1, #0xf		@; R1 = z√≥calo del proceso desbancado
 	bl _gp_inhibirIRQs
-	str r1, [r0]			@; guardar zÛcalo con PID = 0, para no salvar estado			
+	str r1, [r0]			@; guardar z√≥calo con PID = 0, para no salvar estado			
 	ldr r2, =_gd_pcbs
 	mov r10, #24
 	mul r11, r1, r10
-	add r2, r11				@; R2 = direcciÛn base _gd_pcbs[zocalo]
+	add r2, r11				@; R2 = direcci√≥n base _gd_pcbs[zocalo]
 	mov r3, #0
 	str r3, [r2]			@; pone a 0 el campo PID del PCB del proceso
 	str r3, [r2, #20]		@; borrar porcentaje de USO de la CPU
 	ldr r0, =_gd_sincMain
 	ldr r2, [r0]			@; R2 = valor actual de la variable de sincronismo
 	mov r3, #1
-	mov r3, r3, lsl r1		@; R3 = m·scara con bit correspondiente al zÛcalo
+	mov r3, r3, lsl r1		@; R3 = m√°scara con bit correspondiente al z√≥calo
 	orr r2, r3
 	str r2, [r0]			@; actualizar variable de sincronismo
 	bl _gp_desinhibirIRQs
@@ -549,14 +549,14 @@ _gp_terminarProc:
 
 .global _gp_matarProc
 	@; Rutina para destruir un proceso de usuario:
-	@; borra el PID del PCB del zÛcalo referenciado por par·metro, para indicar
-	@; que esa entrada del vector _gd_pcbs est· libre; elimina el Ìndice de
-	@; zÛcalo de la cola de READY o de la cola de DELAY, estÈ donde estÈ;
-	@; Par·metros:
-	@;	R0:	zÛcalo del proceso a matar (entre 1 y 15).
+	@; borra el PID del PCB del z√≥calo referenciado por par√°metro, para indicar
+	@; que esa entrada del vector _gd_pcbs est√° libre; elimina el √≠ndice de
+	@; z√≥calo de la cola de READY o de la cola de DELAY, est√© donde est√©;
+	@; Par√°metros:
+	@;	R0:	z√≥calo del proceso a matar (entre 1 y 15).
 _gp_matarProc:
 	push {r1-r10, lr}
-	ldr r1, =_gd_pcbs		@; cargamos la direcciÛn del vector de pcbs
+	ldr r1, =_gd_pcbs		@; cargamos la direcci√≥n del vector de pcbs
 	mov r2, #24
 	mla r3, r2, r0, r1		@; calculamos el desplazamiento
 	mov r4, #0	
@@ -610,9 +610,9 @@ _gp_matarProc:
 	pop {r1-r10, pc}
 	
 .global _gp_retardarProc
-	@; retarda la ejecuciÛn de un proceso durante cierto n˙mero de segundos,
-	@; coloc·ndolo en la cola de DELAY
-	@;Par·metros
+	@; retarda la ejecuci√≥n de un proceso durante cierto n√∫mero de segundos,
+	@; coloc√°ndolo en la cola de DELAY
+	@;Par√°metros
 	@; R0: int nsec
 _gp_retardarProc:
 	push {r1-r7, lr}
@@ -622,16 +622,16 @@ _gp_retardarProc:
 	ldr r1, =_gd_pidz
 	ldr r4, [r1]
 	and r4, r4, #0xf	@; cogemos el numero de zocalo del proceso actual
-	orr r3, r3, r4		@; aÒadimos el num. de zocalo
+	orr r3, r3, r4		@; a√±adimos el num. de zocalo
 	mov r3, r3, lsl #24	@; ponemos el zocalo en los 8 bits altos
-	orr r3, r3, r2		@; aÒadimos los tics
+	orr r3, r3, r2		@; a√±adimos los tics
 	ldr r5, =_gd_qDelay
 	ldr r6, =_gd_nDelay
 	ldr r7, [r6]
 	mov r8, #4
 	mul r9, r7, r8
-	bl _gp_inhibirIRQs	@; inhibimos las IRQ porque si aÒadimos el proceso en la cola de delay sera necesario tambien aumentar el numero de procesos en la cola de delay para que no haya incoherencias y indicamos en el pidz que el proceso esta en la cola de delay
-	str r3, [r5, r9]	@; aÒadimos en la cola el word creado
+	bl _gp_inhibirIRQs	@; inhibimos las IRQ porque si a√±adimos el proceso en la cola de delay sera necesario tambien aumentar el numero de procesos en la cola de delay para que no haya incoherencias y indicamos en el pidz que el proceso esta en la cola de delay
+	str r3, [r5, r9]	@; a√±adimos en la cola el word creado
 	add r7, #1
 	str r7, [r6]		@; incrementamos el numero de procesos en delay
 	ldr r4, [r1]
@@ -639,15 +639,15 @@ _gp_retardarProc:
 	str r4, [r1]			@; guardamos el nuevo pidz
 	bl _gp_desinhibirIRQs
 	bl _gp_WaitForVBlank	@; invocamos a la nueva rutina
-	pop {r1-r7, pc}			@; no retornar· hasta que se haya agotado el retardo
+	pop {r1-r7, pc}			@; no retornar√° hasta que se haya agotado el retardo
 
 
 	.global _gp_inihibirIRQs
 	@; pone el bit IME (Interrupt Master Enable) a 0, para inhibir todas
-	@; las IRQs y evitar asÌ posibles problemas debidos al cambio de contexto
+	@; las IRQs y evitar as√≠ posibles problemas debidos al cambio de contexto
 _gp_inhibirIRQs:
 	push {r0-r1, lr}
-	ldr r0, =0x4000208	@; cargamos la direcciÛn del registro IME
+	ldr r0, =0x4000208	@; cargamos la direcci√≥n del registro IME
 	ldr r1, [r0]
 	bic r1, #1
 	str r1, [r0]
@@ -665,11 +665,11 @@ _gp_desinhibirIRQs:
 	pop {r0-r1, pc}
 	
 	.global _gp_rsiTIMER0
-	@; Rutina de Servicio de InterrupciÛn (RSI) para contabilizar los tics
+	@; Rutina de Servicio de Interrupci√≥n (RSI) para contabilizar los tics
 	@; de trabajo de cada proceso: suma los tics de todos los procesos y calcula
 	@; el porcentaje de uso de la CPU, que se guarda en los 8 bits altos de la
 	@; entrada _gd_pcbs[z].workTicks de cada proceso (z) y, si el procesador
-	@; gr·fico secundario est· correctamente configurado, se imprime en la
+	@; gr√°fico secundario est√° correctamente configurado, se imprime en la
 	@; columna correspondiente de la tabla de procesos.
 _gp_rsiTIMER0:
 	push {r0-r11, lr}
@@ -682,7 +682,7 @@ _gp_rsiTIMER0:
 		cmp r11, #15
 		movgt r11, #0
 		bgt .Lperc			@; comprovamos si hemos visto todas las posiciones del vector de pcbs
-		mla r3, r10, r11, r9	@; calculamos la direcciÛn inicial de cada pcb
+		mla r3, r10, r11, r9	@; calculamos la direcci√≥n inicial de cada pcb
 		ldr r4, [r3]		@; accedemos al PID para ver si hay un proceso
 		cmp r4, #0
 		beq .LesSO

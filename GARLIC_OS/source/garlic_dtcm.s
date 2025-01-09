@@ -1,7 +1,7 @@
 @;==============================================================================
 @;
-@;	"garlic_dtcm.s":	zona de datos básicos del sistema GARLIC 2.0
-@;						(ver "garlic_system.h" para descripción de variables)
+@;	"garlic_dtcm.s":	zona de datos bï¿½sicos del sistema GARLIC 2.0
+@;						(ver "garlic_system.h" para descripciï¿½n de variables)
 @;
 @;==============================================================================
 
@@ -9,7 +9,7 @@
 
 	.align 2
 
-	.global _gd_pidz			@; Identificador de proceso + zócalo actual
+	.global _gd_pidz			@; Identificador de proceso + zï¿½calo actual
 _gd_pidz:	.word 0
 
 	.global _gd_pidCount		@; Contador global de PIDs
@@ -21,16 +21,16 @@ _gd_tickCount:	.word 0
 	.global _gd_sincMain		@; Sincronismos con programa principal
 _gd_sincMain:	.word 0
 
-	.global _gd_seed			@; Semilla para generación de números aleatorios
+	.global _gd_seed			@; Semilla para generaciï¿½n de nï¿½meros aleatorios
 _gd_seed:	.word 0xFFFFFFFF
 
-	.global _gd_nReady			@; Número de procesos en la cola de READY
+	.global _gd_nReady			@; Nï¿½mero de procesos en la cola de READY
 _gd_nReady:	.word 0
 
 	.global _gd_qReady			@; Cola de READY (procesos preparados)
 _gd_qReady:	.space 16
 
-	.global _gd_nDelay			@; Número de procesos en la cola de DELAY
+	.global _gd_nDelay			@; Nï¿½mero de procesos en la cola de DELAY
 _gd_nDelay:	.word 0
 
 	.global _gd_qDelay			@; Cola de DELAY (procesos retardados)
@@ -57,13 +57,13 @@ _gd_bufferPID: .space 3			@; Objectiu: Poder escriure PID en la pantalla inferio
 	.global _gd_bufferPC			@; PROG_G - Buffer per poder convertir el PC de num a STR
 _gd_bufferPC: .space 9			@; Objectiu: Poder escriure PC en la pantalla inferior de la NDS (_gg_escribirLineaTabla)
 
-.global _gd_perc				@; Variable para guardar el procentage en string
+	.global _gd_perc				@; Variable para guardar el procentage en string
 _gd_perc: .word 0
 
-.global _gd_quo					@; Variable para guardar el cuociente de la division
+	.global _gd_quo					@; Variable para guardar el cuociente de la division
 _gd_quo: .word 0
 
-.global _gd_mod					@; Variable para guardar el modulo de la division
+	.global _gd_mod					@; Variable para guardar el modulo de la division
 _gd_mod: .word 0
 
 .end

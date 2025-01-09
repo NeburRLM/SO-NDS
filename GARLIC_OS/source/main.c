@@ -1,7 +1,8 @@
 /*------------------------------------------------------------------------------
 
-	"main.c" : fase 2 / ProgGP
+	"main.c" : fase 2 / ProgGPM
 
+	Versión final de GARLIC 2.0
 	Programa de control del sistema operativo GARLIC, versión 2.0
 
 ------------------------------------------------------------------------------*/
@@ -12,14 +13,17 @@
 
 extern int * punixTime;		// puntero a zona de memoria con el tiempo real
 
+extern void loadFiles();
+
 const short divFreq0 = -33513982/1024;		// frecuencia de TIMER0 = 1 Hz
+const short divFreq1 = -33513982/(1024*7);		// frecuencia de TIMER1 = 7 Hz
 const short divFreq2 = -33513982/(1024*4);	// frecuencia de TIMER2 = 4 Hz
 
 const char *argumentosDisponibles[4] = { "0", "1", "2", "3"};
 		// se supone que estos programas están disponibles en el directorio
 		// "Programas" de las estructura de ficheros de Nitrofiles
-const char *progs[7] = {"BORR","CRON","CUST","HOLA","PONG","PRNT","SQR1"};
-const unsigned char num_progs = 7;
+const char *progs[11] = {"BORR","CRON","LABE","HOLA","PONG","PRNT","DESC","DIV1","ORDH","SQR1","CUST"};
+const unsigned char num_progs = 11;
 
 
 /* función para escribir los porcentajes de uso de la CPU de los procesos de los
@@ -54,8 +58,10 @@ void gestionSincronismos()
 		for (i = 1; i <= 15; i++)
 		{
 			if (_gd_sincMain & mask)
-			{	// actualizar visualización de tabla de zócalos
-				_gg_escribirLineaTabla(i, (i == _gi_za ? 2 : 3));
+			{
+				_gm_liberarMem(i);	// liberar la memoria del proceso terminado
+				_gg_escribirLineaTabla(i, (i == _gi_za ? 2 : 3));	// actualizar visualizacion de tabla de zocalos
+
 				if (i != _gi_za)			// si no se trata del propio zócalo actual
 					_gg_generarMarco(i, 3);
 				_gg_escribir("%3* %d: proceso terminado\n", i, 0, 0);
@@ -127,8 +133,9 @@ void seleccionarPrograma()
 	}
 	if (i < 16)						// en caso de encontrar otro proceso activo
 	{
-		_gd_pcbs[i].PID = 0;		// liberar su PCB
-		_gd_nReady = 0;				// eliminar cualquier proceso de cola de READY
+		//_gp_matarProc(i);					// matar proceso i
+		//_gm_liberarMem(i);	// liberar la memoria del proceso terminado
+
 		_gg_escribir("* %3%d%0: proceso destruido\n", i, 0, 0);
 		_gg_escribirLineaTabla(i, (i == _gi_za ? 2 : 3));
 		if (i != _gi_za)			// si no se trata del propio zócalo actual
@@ -140,7 +147,7 @@ void seleccionarPrograma()
 	_gg_escribir("%1*** seleccionar argumento :\n", 0, 0, _gi_za);
 	argumento = escogerOpcion((char **) argumentosDisponibles, 4);
 	
-	start = _gm_cargarPrograma((char *) progs[ind_prog]);
+	start = _gm_cargarPrograma(_gi_za, (char *) progs[ind_prog]);
 	if (start)
 	{
 		_gp_crearProc(start, _gi_za, (char *) progs[ind_prog], argumento);
@@ -181,6 +188,11 @@ void inicializarSistema() {
 	TIMER0_DATA = divFreq0; 
 	TIMER0_CR = 0xC3;  	// Timer Start | IRQ Enabled | Prescaler 3 (F/1024)
 
+	irqSet(IRQ_TIMER1, _gm_rsiTIMER1);
+	irqEnable(IRQ_TIMER1);				// instalar la RSI para el TIMER1
+	TIMER1_DATA = divFreq1; 
+	TIMER1_CR = 0xC3;  	// Timer Start | IRQ Enabled | Prescaler 3 (F/1024)
+
 	irqSet(IRQ_TIMER2, _gg_rsiTIMER2);
 	irqEnable(IRQ_TIMER2);			// instalar la RSI para el TIMER2
 	TIMER2_DATA = divFreq2; 
@@ -203,7 +215,8 @@ int main(int argc, char **argv) {
 	//int mtics, v;
 
 	inicializarSistema();
-	
+	loadFiles();
+
 	_gg_escribir("%1********************************", 0, 0, 0);
 	_gg_escribir("%1*                              *", 0, 0, 0);
 	_gg_escribir("%1* Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
@@ -228,8 +241,8 @@ int main(int argc, char **argv) {
 
 
 /*_gg_escribir("*** Carga de programa HOLA.elf\n", 0, 0, 0);
-	start = _gm_cargarPrograma("HOLA");
-	start2 = _gm_cargarPrograma("DIV1");
+	start = _gm_cargarPrograma(_gi_za, "HOLA");
+	start2 = _gm_cargarPrograma(_gi_za, "DIV1");
 	if (start)
 	{	
 		_gp_crearProc(start, 1, "HOLA", 3);
@@ -267,7 +280,7 @@ int main(int argc, char **argv) {
 	/* TEST 2*/
 	/* 
 	_gg_escribir("*** Carga de programa PONG.elf\n", 0, 0, 0);
-	start = _gm_cargarPrograma("PONG");
+	start = _gm_cargarPrograma(_gi_za, "PONG");
 	if (start)
 	{
 		for (v = 1; v < 4; v++)	// inicializar buffers de ventanas 1, 2 y 3

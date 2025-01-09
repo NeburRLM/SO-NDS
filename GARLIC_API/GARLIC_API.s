@@ -128,5 +128,13 @@ GARLIC_clear:
 	mov lr, pc
 	ldr pc, [r4, #56]		@; llamada indirecta a rutina 0x0E
 	pop {r4, pc}
+	
+	.global GARLIC_fwrite
+GARLIC_fwrite:
+	push {r4, lr}
+	mov r4, #0
+	mov lr, pc
+	ldr pc, [r4, #60]		@; llamada indirecta a rutina 0x0E
+	pop {r4, pc}
 
 .end

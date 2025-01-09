@@ -12,7 +12,7 @@
 typedef unsigned int size_t;
 
 // Declaraci�n de FILE como una estructura vac�a (placeholder)
-typedef struct _FILE FILE;
+typedef struct __GARLIC_FILE GARLIC_FILE;
 
 	/* GARLIC_pid: devuelve el identificador del proceso actual */
 extern int GARLIC_pid();
@@ -106,10 +106,12 @@ extern int GARLIC_wait(unsigned char sem);
 extern int GARLIC_signal(unsigned char sem);
 
 /* PROG M*/
-extern FILE * GARLIC_fopen(const char * filename, const char * mode);
+extern GARLIC_FILE * GARLIC_fopen(const char * filename, const char * mode);
 
-extern int GARLIC_fread(void * buffer, size_t size, size_t numele, FILE * file);
+extern int GARLIC_fread(void * buffer, size_t size, size_t numele, GARLIC_FILE * file);
 
-extern int GARLIC_fclose(FILE * file);
+extern int GARLIC_fwrite(const void *buffer, size_t size, size_t num, GARLIC_FILE *file);
+
+extern int GARLIC_fclose(GARLIC_FILE * file);
 
 #endif // _GARLIC_API_h_
