@@ -57,5 +57,13 @@ _gd_bufferPID: .space 3			@; Objectiu: Poder escriure PID en la pantalla inferio
 	.global _gd_bufferPC			@; PROG_G - Buffer per poder convertir el PC de num a STR
 _gd_bufferPC: .space 9			@; Objectiu: Poder escriure PC en la pantalla inferior de la NDS (_gg_escribirLineaTabla)
 
+.global _gd_perc				@; Variable para guardar el procentage en string
+_gd_perc: .word 0
+
+.global _gd_quo					@; Variable para guardar el cuociente de la division
+_gd_quo: .word 0
+
+.global _gd_mod					@; Variable para guardar el modulo de la division
+_gd_mod: .word 0
 
 .end

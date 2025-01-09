@@ -69,11 +69,11 @@ extern garlicPCB _gd_pcbs[16];	// vector de PCBs de los procesos activos
 typedef struct				// Estructura del buffer de una ventana
 {							// (WBUF: Window BUFfer)
 	int pControl;			// control de escritura en ventana
-							// 4 bits altos: cód. color actual (0..3)
-							// 12 bits medios: número de línea (0..23) --- (ANTERIOR) 16 bits altos: numero de linea (0..23)
+							// 4 bits altos: cÃ³d. color actual (0..3)
+							// 12 bits medios: nÃºmero de lÃ­nea (0..23) --- (ANTERIOR) 16 bits altos: numero de linea (0..23)
 							// 16 bits bajos: caracteres pendientes (0..32)
 	short pChars[32];		// vector de 32 caracteres pendientes de escritura
-							// indicando el codigo ASCII de cada posici�n
+							// indicando el codigo ASCII de cada posiciï¿½n
 } PACKED garlicWBUF;
 
 extern garlicWBUF _gd_wbfs[16];	// vector con los buffers de 16 ventanas
@@ -85,6 +85,11 @@ extern char _gd_sem[8];				// vector de semaforos
 
 extern int _gm_primeraPosMem;	// contindr� la primera posici� de mem�ria lliure
 
+extern int _gd_perc;			// contendrá el porcentage en string
+
+extern int _gd_quo;				// contendrá el cuociente de la division
+
+extern int _gd_mod;				// contendrá el modulo de la division
 
 //------------------------------------------------------------------------------
 //	Rutinas de gesti�n de procesos (garlic_itcm_proc.s)
@@ -122,6 +127,38 @@ extern int _gp_numProc();
 */
 extern int _gp_crearProc(intFunc funcion, int zocalo, char *nombre, int arg);
 
+
+/* _gp_retardarProc:	retarda la ejecuciÃ³n del proceso actual durante el
+				nÃºmero de segundos que se especifica por parÃ¡metro,
+				colocÃ¡ndolo en el vector de DELAY;
+	ParÃ¡metros:
+		nsec ->	nÃºmero de segundos (mÃ¡x. 600); si se especifica 0, el proceso
+				solo se desbanca y el retardo serÃ¡ el tiempo que tarde en ser
+				restaurado (depende del nÃºmero de procesos activos del sistema)
+	ATENCIÃ“N:
+				Â¡el proceso del sistema operativo (PIDz = 0) NO podrÃ¡ utilizar
+				esta funciÃ³n, para evitar que el procesador se pueda quedar sin
+				procesos a ejecutar!
+*/
+extern int _gp_retardarProc(int nsec);
+
+
+/* _gp_matarProc:	elimina un proceso de las colas de READY o DELAY, segÃºn
+				donde se encuentre, libera memoria y borra el PID de la
+				estructura _gd_pcbs[zocalo] correspondiente al zÃ³calo que se
+				pasa por parÃ¡metro;
+	ATENCIÃ“N:	Esta funciÃ³n solo la llamarÃ¡ el sistema operativo, por lo tanto,
+				no serÃ¡ necesario realizar comprobaciones del parÃ¡metro; por
+				otro lado, el proceso del sistema operativo (zocalo = 0) Â¡NO se
+				tendrÃ¡ que destruir a sÃ­ mismo!
+*/
+extern int _gp_matarProc(int zocalo);
+
+
+/* _gp_rsiTIMER0:	servicio de interrupciones del TIMER0 de la plataforma NDS,
+				que refrescarÃ¡ periÃ³dicamente la informaciÃ³n de la tabla de
+				procesos relativa al tanto por ciento de uso de la CPU; */
+extern void _gp_rsiTIMER0();
 
 //------------------------------------------------------------------------------
 //	Funciones de gesti�n de memoria (garlic_mem.c)
@@ -168,24 +205,24 @@ extern void _gm_reubicar(char *fileBuf, unsigned int pAddr, unsigned int *dest);
 extern void _gg_iniGrafA();
 
 
-/* _gg_generarMarco: dibuja el marco de la ventana que se indica por parámetro,
+/* _gg_generarMarco: dibuja el marco de la ventana que se indica por parÃ¡metro,
 												con el color correspondiente; */
 extern void _gg_generarMarco(int v, int color);
 
 
-/* _gg_escribir: escribe una cadena de carácteres en la ventana indicada;
-	Parámetros:
+/* _gg_escribir: escribe una cadena de carÃ¡cteres en la ventana indicada;
+	ParÃ¡metros:
 		formato	->	string de formato:
-					admite '\n' (salto de línea), '\t' (tabulador, 4 espacios)
-					y códigos entre 32 y 159 (los 32 últimos son carácteres
-					gráficos), además de marcas de formato %c, %d, %h y %s (máx.
+					admite '\n' (salto de lÃ­nea), '\t' (tabulador, 4 espacios)
+					y cÃ³digos entre 32 y 159 (los 32 Ãºltimos son carÃ¡cteres
+					grÃ¡ficos), ademÃ¡s de marcas de formato %c, %d, %h y %s (mÃ¡x.
 					2 marcas por string) y de las marcas de cambio de color 
 					actual %0 (blanco), %1 (amarillo), %2 (verde) y %3 (rojo);
 		val1	->	valor a sustituir en la primera marca de formato, si existe
 		val2	->	valor a sustituir en la segunda marca de formato, si existe
-					- los valores pueden ser un código ASCII (%c), un valor
+					- los valores pueden ser un cÃ³digo ASCII (%c), un valor
 					  natural de 32 bits (%d, %x) o un puntero a string (%s)
-		ventana	->	número de ventana (0..16)
+		ventana	->	nÃºmero de ventana (0..16)
 */
 extern void _gg_escribir(char *formato, unsigned int val1, unsigned int val2,
 																   int ventana);
@@ -202,52 +239,52 @@ extern void _gg_escribir(char *formato, unsigned int val1, unsigned int val2,
 extern void _gg_escribirLinea(int v, int f, int n);
 
 
-/* _gg_desplazar: rutina de soporte a _gg_escribir(), para desplazar una posici�n
+/* _gg_desplazar: rutina de soporte a _gg_escribir(), para desplazar una posiciï¿½n
 					hacia arriba todas las filas de la ventana (v) y borrar el
-					contenido de la �ltima fila.
+					contenido de la ï¿½ltima fila.
 */
 extern void _gg_desplazar(int v);
 
-/* _gg_escribirCar: escribe un carácter (baldosa) en la posición de la ventana
+/* _gg_escribirCar: escribe un carÃ¡cter (baldosa) en la posiciÃ³n de la ventana
 				indicada, con un color concreto;
-	Parámetros:
+	ParÃ¡metros:
 		vx		->	coordenada x de ventana (0..31)
 		vy		->	coordenada y de ventana (0..23)
-		c		->	código del carácter, como número de baldosa (0..127)
+		c		->	cÃ³digo del carÃ¡cter, como nÃºmero de baldosa (0..127)
 		color	->	color del texto (0..3)
-		ventana	->	número de ventana (0..15)
+		ventana	->	nÃºmero de ventana (0..15)
 */
 extern void _gg_escribirCar(int vx, int vy, char c, int color, int ventana);
 
 
-/* _gg_escribirMat: escribe una matriz de 8x8 carácteres a partir de una
-				posición de la ventana indicada, con un color concreto;
-	Parámetros:
+/* _gg_escribirMat: escribe una matriz de 8x8 carÃ¡cteres a partir de una
+				posiciÃ³n de la ventana indicada, con un color concreto;
+	ParÃ¡metros:
 		vx		->	coordenada x inicial de ventana (0..31)
 		vy		->	coordenada y inicial de ventana (0..23)
-		m		->	matriz 8x8 de códigos ASCII
+		m		->	matriz 8x8 de cÃ³digos ASCII
 		color	->	color del texto (0..3)
-		ventana	->	número de ventana (0..15)
+		ventana	->	nÃºmero de ventana (0..15)
 */
 extern void _gg_escribirMat(int vx, int vy, char m[][8], int color, int ventana);
 
 
-/* _gg_escribirLineaTabla: escribe los campos básicos de una línea de la tabla
-				de procesos, correspondiente al número de zócalo que se pasa por
-				parámetro con el color especificado; los campos a escribir son:
-					número de zócalo, PID y nombre clave del proceso (keyName);
+/* _gg_escribirLineaTabla: escribe los campos bÃ¡sicos de una lÃ­nea de la tabla
+				de procesos, correspondiente al nÃºmero de zÃ³calo que se pasa por
+				parÃ¡metro con el color especificado; los campos a escribir son:
+					nÃºmero de zÃ³calo, PID y nombre clave del proceso (keyName);
 */
 extern void _gg_escribirLineaTabla(int z, int color);
 
 
 /* _gg_rsiTIMER2:	servicio de interrupciones del TIMER2 de la plataforma NDS,
-				que refrescará periódicamente la información de la tabla de
-				procesos relativa a la dirección actual de ejecución; */
+				que refrescarÃ¡ periÃ³dicamente la informaciÃ³n de la tabla de
+				procesos relativa a la direcciÃ³n actual de ejecuciÃ³n; */
 extern void _gg_rsiTIMER2();
 
 
  /* _gg_setChar: Defineix un nou caracter grafic a partir del codi 128
-	Par�metros:
+	Parï¿½metros:
 		n	->	numero de caracter, entre 128 i 255
 		buffer	->	punter a una matriu de 8x8 bytes (emmagatzemada per files)
 					on cada byte indica l'index de color d'un pixel.
@@ -338,32 +375,31 @@ extern void _gs_pintarFranjas(unsigned char zocalo, unsigned short index_ini,
 */
 extern void _gs_representarPilas();
 
-
 //------------------------------------------------------------------------------
 //	Rutinas de soporte a la interficie de usuario (garlic_itcm_ui.s)
 //------------------------------------------------------------------------------
-extern int _gi_za;				// zócalo seleccionado actualmente
+extern int _gi_za;				// zÃ³calo seleccionado actualmente
 
 
 /* _gi_movimientoVentanas:	actualiza el desplazamiento y escalado de los
-				fondos 2 y 3 del procesador gráfico A, para efectuar los
-				movimientos de las ventanas según el comportamiento
+				fondos 2 y 3 del procesador grÃ¡fico A, para efectuar los
+				movimientos de las ventanas segÃºn el comportamiento
 				requerido de la interficie de usuario; */
 extern void _gi_movimientoVentanas();
 
 
-/* _gi_redibujarZocalo: rutina para actualizar la tabla de zócalos en función
-				del zócalo actual (_gi_za) y del parámetro (seleccionar):
-					si seleccionar == 0, dibuja la línea de _gi_za según el
-											color asociado al estado del zócalo
-											(blanco -> activo, salmón -> libre);
-					sino, 				dibuja la línea en magenta;
+/* _gi_redibujarZocalo: rutina para actualizar la tabla de zÃ³calos en funciÃ³n
+				del zÃ³calo actual (_gi_za) y del parÃ¡metro (seleccionar):
+					si seleccionar == 0, dibuja la lÃ­nea de _gi_za segÃºn el
+											color asociado al estado del zÃ³calo
+											(blanco -> activo, salmÃ³n -> libre);
+					sino, 				dibuja la lÃ­nea en magenta;
 */
 extern void _gi_redibujarZocalo(int seleccionar);
 
 
 /* _gi_controlInterfaz: rutina para gestionar la interfaz del usuario a partir
-				del código de tecla que se pasa por parámetro; */
+				del cÃ³digo de tecla que se pasa por parÃ¡metro; */
 extern void _gi_controlInterfaz(int key);
 
 
