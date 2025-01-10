@@ -365,7 +365,7 @@ _gp_actualizarDelay:
 		ldr r8, =_gd_nReady
 		ldr r9, [r8]
 		bl _gp_inhibirIRQs
-		str r5, [r7, r9]	@; guardamos el zocalo en la cola de Ready
+		strb r5, [r7, r9]	@; guardamos el zocalo en la cola de Ready
 		add r9, #1			@; incrementamos en 1 el numero de procesos en la cola de Ready
 		str r9, [r8]
 		mov r8, #0

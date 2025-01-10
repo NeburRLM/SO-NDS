@@ -153,6 +153,10 @@ void seleccionarPrograma()
 		_gg_escribir(" (%d)\n", argumento, 0, 0);
 		_gg_escribirLineaTabla(_gi_za, 2);
 	}
+	else
+	{
+		_gg_escribir("%3** NO HAY SUFICIENTE MEMORIA **\n", 0, 0, _gi_za);
+	}
 }
 
 /* Inicializaciones generales del sistema Garlic */

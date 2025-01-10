@@ -323,7 +323,7 @@ intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 	unsigned int primerDirDades = 0; 												//guardarà la primera direcció de l'espai reservat del segment de dades
 	int i;																			//bucle per recòrrer els segments	
 	intFunc adrProg = 0;															//variable aux per guardar l'adressa del programa actual
-
+	unsigned char cap = 1;															//variable per controlar si el programa ha capigut i s'ha carregat correctament
 	
 	//buscar el fitxer
 	sprintf(pathFit, "/Programas/%s.elf", keyName);									//guardem el path del "fitxer.elf" en una cadena de caràcters
@@ -378,6 +378,7 @@ intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 								
 							} else {
 								_gm_liberarMem(zocalo);								//si no s'ha pogut reservar la memòria requerida, alliberem a partir del zocalo
+								cap = 0;											//programa no carregat ja que no hi ha espai
 							}								
 						}
 					}
@@ -402,14 +403,18 @@ intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 							else 
 							{
 								_gm_liberarMem(zocalo);								//si no s'ha pogut reservar la memòria requerida, alliberem a partir del zocalo
+								cap = 0;											//programa no carregat ja que no hi ha espai
 							}
 						}	
 					}														
 				}
 				offset = offset + capcaleraElf.e_phentsize;							//actualitzem offset per a que apunti al següent segment del .elf a partir del tamany de cada entrada
 			}
-			//direcció d'inici del programa a la memòria física, tenint en compte totes les reubicacions necessàries perquè el programa s'executi correctament des de la posició en memòria on s'ha carregat
-			adrProg = (intFunc) (primerDirCodi + entry - paddrSegCodi);
+			if (cap == 1)															//mirem si el programa ha cabut correctament
+			{	
+				//direcció d'inici del programa a la memòria física, tenint en compte totes les reubicacions necessàries perquè el programa s'executi correctament des de la posició en memòria on s'ha carregat
+				adrProg = (intFunc) (primerDirCodi + entry - paddrSegCodi);
+			}
 		}
 		free(buffer);																//netejem buffer
 	}																
