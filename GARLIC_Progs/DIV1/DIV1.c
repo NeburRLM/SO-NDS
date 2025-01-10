@@ -20,6 +20,8 @@ int _start(int arg)
 		numAl[i]=GARLIC_random();
 	}
 	
+	GARLIC_wait(1);
+	
 	for(int j=0; j<tam; j++){
 		GARLIC_divmod(numAl[j], 2, &quo, &mod);
 		if(mod==0){

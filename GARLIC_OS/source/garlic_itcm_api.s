@@ -162,40 +162,26 @@ _ga_wait:
 	ldr r4, =_gd_qReady
 	ldr r5, =_gd_nReady
 	ldr r6, [r5]
-	ldr r9, =_gd_pidz
-	ldr r9, [r9]
+	ldr r12, =_gd_pidz
+	ldr r9, [r12]
+	mov r10, r9
+	orr r10, r10, #(1 << 31)	@; ponemos el bit mas alto a 1
+	str r10, [r12]			@; guardamos el nuevo pidz
 	mov r7, #0xf
 	and r9, r9, r7			@; numero de zocalo
 	mov r7, #0
-	.LsacarDeReady:
-		cmp r7, r6
-		beq .LfiSacarDeReady
-		ldr r8, [r4, r7]
-		cmp r8, r9
-		beq .LmovReady
-		add r7, #1
-		b .LsacarDeReady
+	
 	.LmovReady:
 		mov r10, #0
 		mov r11, #0xffffff
 		orr r10, r10, r9		@;a�adimos el numero de zocalo
-		mov r10, r10, lsr #8
+		mov r10, r10, lsl #24
 		orr r10, r10, r11		@; ponemos los 24 bits restantes a 1
 		ldr r11, =_gd_qDelay
 		str r10, [r11]			@; guardamos el proceso bloqueado en la cola de Delay
 		mov r10, r7
-		.LiniMov:
-			cmp r6, r7
-			beq .LfiIniMov
-			add r7, #1
-			ldr r10, [r4, r7]
-			sub r7, #1
-			str r10, [r4, r7]
-			add r7, #1
-			b .LiniMov
+		
 	.LfiIniMov:
-		sub r6, #1
-		str r6, [r5]			@; restamos un proceso a nReady
 		ldr r10, =_gd_nDelay
 		ldr r11, [r10]
 		add r11, #1
@@ -213,7 +199,7 @@ _ga_wait:
 
 	.global _ga_signal
 _ga_signal:
-	push {r1-r11, lr}
+	push {r1-r12, lr}
 	ldr r1, =_gd_sem
 	ldrb r2, [r1, r0]		@; cogemos el valor del semaforo
 	cmp r2, #0
@@ -231,10 +217,15 @@ _ga_signal:
 		cmp r6, r7
 		beq .LfiBuscD
 		ldr r8, [r4, r7]
-		mov r8, r8, lsl #8	@; ponemos el zocalo en los 8 bits bajos
-		and r8, r8, r9		@; obtenemos el numero de zocalo
-		cmp r8, r0
-		bne .LbuscD
+		mov r8, r8, lsr #24	@; ponemos el zocalo en los 8 bits bajos
+
+		ldr r12, =_gd_pidz
+		
+		ldr r9, [r12]              @; cargamos el valor desde [r12] a r9
+		mov r10, r9                @; copiamos el valor de r9 a r10
+		bic r10, r10, #(1 << 31)   @; limpiamos el bit más alto (bit 31)
+		str r10, [r12]             @; guardamos el nuevo valor en [r12]
+		
 		ldr r9, =_gd_qReady
 		ldr r10, =_gd_nReady
 		ldr r11, [r10]
@@ -261,7 +252,7 @@ _ga_signal:
 		mov r0, #0			@; en caso de que no este bloqueado devolvemos codigo de que no estaba bloqueado
 		
 	.Lsig_fi:
-	pop {r1-r11, pc}
+	pop {r1-r12, pc}
 
 
 	.global _ga_fopen

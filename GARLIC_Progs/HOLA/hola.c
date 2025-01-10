@@ -28,7 +28,9 @@ int _start(int arg)				/* función de inicio : no se usa 'main' */
 	iter++;							// asegurar que hay al menos una iteración
 	
 	for (i = 0; i < iter; i++)		// escribir mensajes
+	{
+		GARLIC_signal(1);
 		GARLIC_printf("(%d)\t%d: Hello world!\n", GARLIC_pid(), i);
-
+	}	
 	return 0;
 }

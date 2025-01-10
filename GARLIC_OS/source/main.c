@@ -212,13 +212,12 @@ int main(int argc, char **argv) {
 //------------------------------------------------------------------------------
 
 	int key;
-	//intFunc start;
-	//intFunc start2;
-	//int mtics, v;
 
 	inicializarSistema();
 	loadFiles();
-
+	for(int i = 0; i < 8; i++){
+		_gd_sem[i] = 1;
+	}
 	_gg_escribir("%1********************************", 0, 0, 0);
 	_gg_escribir("%1*                              *", 0, 0, 0);
 	_gg_escribir("%1* Sistema Operativo GARLIC 2.0 *", 0, 0, 0);
@@ -240,85 +239,3 @@ int main(int argc, char **argv) {
 	}
 	return 0;			
 }
-
-
-/*_gg_escribir("*** Carga de programa HOLA.elf\n", 0, 0, 0);
-	start = _gm_cargarPrograma(_gi_za, "HOLA");
-	start2 = _gm_cargarPrograma(_gi_za, "DIV1");
-	if (start)
-	{	
-		_gp_crearProc(start, 1, "HOLA", 3);
-		_gp_crearProc(start, 2, "HOLA", 3);
-		if (start2)
-			_gp_crearProc(start2, 3, "DIV1", 3);
-		
-		while (_gd_tickCount < 240)			// esperar 4 segundos
-		{
-			_gp_WaitForVBlank();
-			porcentajeUso();
-		}
-		_gp_matarProc(1);					// matar proceso 1
-		_gg_escribir("Proceso 1 eliminado\n", 0, 0, 0);
-		_gs_dibujarTabla();
-		
-		while (_gd_tickCount < 480)			// esperar 4 segundos más
-		{
-			_gp_WaitForVBlank();
-			porcentajeUso();
-		}
-		_gp_matarProc(3);					// matar proceso 3
-		_gg_escribir("Proceso 3 eliminado\n", 0, 0, 0);
-		_gs_dibujarTabla();
-		
-		while (_gp_numProc() > 1)			// esperar a que proceso 2 acabe
-		{
-			_gp_WaitForVBlank();
-			porcentajeUso();
-		}
-		_gg_escribir("Proceso 2 terminado\n", 0, 0, 0);
-	} else
-		_gg_escribir("*** Programa NO cargado\n", 0, 0, 0);*/
-
-	/* TEST 2*/
-	/* 
-	_gg_escribir("*** Carga de programa PONG.elf\n", 0, 0, 0);
-	start = _gm_cargarPrograma(_gi_za, "PONG");
-	if (start)
-	{
-		for (v = 1; v < 4; v++)	// inicializar buffers de ventanas 1, 2 y 3
-			_gd_wbfs[v].pControl = 0;
-		
-		_gp_crearProc(start, 1, "PONG", 1);
-		_gp_crearProc(start, 2, "PONG", 2);
-		_gp_crearProc(start, 3, "PONG", 3);
-		
-		mtics = _gd_tickCount + 960;
-		while (_gd_tickCount < mtics)		// esperar 16 segundos más
-		{
-			_gp_WaitForVBlank();
-			porcentajeUso();
-		}
-		
-		_gp_matarProc(1);					// matar los 3 procesos a la vez
-		_gp_matarProc(2);
-		_gp_matarProc(3);
-		_gg_escribir("Procesos 1, 2 y 3 eliminados\n", 0, 0, 0);
-		
-		while (_gp_numProc() > 1)	// esperar a que todos los procesos acaben
-		{
-			_gp_WaitForVBlank();
-			porcentajeUso();
-		}
-		
-	} else
-		_gg_escribir("*** Programa NO cargado\n", 0, 0, 0);
-
-
-	_gg_escribir("*** Final fase 2_P\n", 0, 0, 0);
-	_gs_dibujarTabla();
-
-	while(1) {
-		_gp_WaitForVBlank();
-	}							// parar el procesador en un bucle infinito
-	return 0;
-	*/
