@@ -734,6 +734,7 @@ _gp_rsiTIMER0:
 			ldr r3, =_gd_mod
 			bl _ga_divmod				@; dividimos para obtener el porcentaje
 			ldr r2, [r2]
+			mov r2, r2, lsr #8
 			ldr r3, [r3]
 			mov r8, #0
 			@;and r4, r4, r8			@; ponemos a 0 los workticks
