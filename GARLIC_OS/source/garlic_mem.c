@@ -360,27 +360,25 @@ intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 						tamanyFileCodi = taulaSeg.p_filesz;							//obtenim la informació del tamany del fitxer del segment de codi del programa actual (capcaleraElf)
 						offsetSegCodi = taulaSeg.p_offset;							//obtenim la informació del offset del segment de codi del programa actual (capcaleraElf)
 						paddrSegCodi = taulaSeg.p_paddr;							//obtenim la informació de la direcció física del segment de codi del programa actual (capcaleraElf)
-						if (_gm_primeraPosMem + tamanySegCodi <= END_MEM) 			//verifiquem si la posición de memòria _gm_primeraPosMem no supera la direcció final de memòria
+						
+						//reserva memoria, retorna la primera direcció de l'espai reservat per al segment de codi
+						primerDirCodi = (int)_gm_reservarMem(zocalo, tamanySegCodi, (unsigned char)i);
+						//en el cas de que quedi un espai de memòria consecutiu del tamany requerit
+						if (primerDirCodi != 0) 
 						{
-							//reserva memoria, retorna la primera direcció de l'espai reservat per al segment de codi
-							primerDirCodi = (int)_gm_reservarMem(zocalo, tamanySegCodi, (unsigned char)i);
-							//en el cas de que quedi un espai de memòria consecutiu del tamany requerit
-							if (primerDirCodi != 0) 
+							//copia el contingut del segment de programa des del buffer en la direcció de memòria primerDirCodi (_gs_copiaMem(const void *source, void *dest, unsigned int numBytes))
+							_gs_copiaMem((const void *) buffer + offsetSegCodi, (void *)primerDirCodi, tamanyFileCodi);
+							//si només té una entrada en la taula de segments
+							if (phnum == 1) 
 							{
-								//copia el contingut del segment de programa des del buffer en la direcció de memòria primerDirCodi (_gs_copiaMem(const void *source, void *dest, unsigned int numBytes))
-								_gs_copiaMem((const void *) buffer + offsetSegCodi, (void *)primerDirCodi, tamanyFileCodi);
-								//si només té una entrada en la taula de segments
-								if (phnum == 1) 
-								{
-									//aplica reubicancions per ajustar referències amb respecte al segment de codi en funció de taulaSeg.p_paddr
-									_gm_reubicar(buffer, paddrSegCodi, (unsigned int *)primerDirCodi, 0, (unsigned int *)0);
-								}
+								//aplica reubicancions per ajustar referències amb respecte al segment de codi en funció de taulaSeg.p_paddr
+								_gm_reubicar(buffer, paddrSegCodi, (unsigned int *)primerDirCodi, 0, (unsigned int *)0);
+							}
 								
-							} else {
-								_gm_liberarMem(zocalo);								//si no s'ha pogut reservar la memòria requerida, alliberem a partir del zocalo
-								cap = 0;											//programa no carregat ja que no hi ha espai
-							}								
-						}
+						} else {
+							_gm_liberarMem(zocalo);								//si no s'ha pogut reservar la memòria requerida, alliberem a partir del zocalo
+							cap = 0;											//programa no carregat ja que no hi ha espai
+						}								
 					}
 					else if ((taulaSeg.p_flags == 6) && primerDirCodi != 0) 		//si els flags del segment són lectura i escriptura (segment dades) i s'ha reservat correctament memòria al segment de codi
 					{
@@ -388,26 +386,24 @@ intFunc _gm_cargarPrograma(int zocalo, char *keyName)
 						tamanyFileDades = taulaSeg.p_filesz;						//obtenim la informació del tamany del fitxer del segment de dades del programa actual (capcaleraElf)
 						offsetSegDades = taulaSeg.p_offset;							//obtenim la informació del offset del segment de dades del programa actual (capcaleraElf)
 						paddrSegDades = taulaSeg.p_paddr;							//obtenim la informació de la direcció física del segment de dades del programa actual (capcaleraElf)
-						if (_gm_primeraPosMem + tamanySegDades <= END_MEM) 			//verifiquem si la posición de memòria _gm_primeraPosMem no supera la direcció final
-						{			
-							//reserva memoria, retorna la primera direcció de l'espai reservat per al segment de dades
-							primerDirDades = (int)_gm_reservarMem(zocalo, tamanySegDades, (unsigned char) i);
-							//en el cas de que quedi un espai de memòria consecutiu del tamany requerit
-							if (primerDirDades != 0) 
-							{
-								//copia el contingut del segment de programa des del buffer en la dirección de memòria primerDirDades (_gs_copiaMem(const void *source, void *dest, unsigned int numBytes))
-								_gs_copiaMem((const void *)buffer + offsetSegDades, (void *)primerDirDades, tamanyFileDades);
-								//aplica reubicancions per ajustar referències
-								_gm_reubicar(buffer, paddrSegCodi, (unsigned int *)primerDirCodi, paddrSegDades, (unsigned int *)primerDirDades);
-							} 
-							else 
-							{
-								_gm_liberarMem(zocalo);								//si no s'ha pogut reservar la memòria requerida, alliberem a partir del zocalo
-								cap = 0;											//programa no carregat ja que no hi ha espai
-							}
-						}	
-					}														
-				}
+			
+						//reserva memoria, retorna la primera direcció de l'espai reservat per al segment de dades
+						primerDirDades = (int)_gm_reservarMem(zocalo, tamanySegDades, (unsigned char) i);
+						//en el cas de que quedi un espai de memòria consecutiu del tamany requerit
+						if (primerDirDades != 0) 
+						{
+							//copia el contingut del segment de programa des del buffer en la dirección de memòria primerDirDades (_gs_copiaMem(const void *source, void *dest, unsigned int numBytes))
+							_gs_copiaMem((const void *)buffer + offsetSegDades, (void *)primerDirDades, tamanyFileDades);
+							//aplica reubicancions per ajustar referències
+							_gm_reubicar(buffer, paddrSegCodi, (unsigned int *)primerDirCodi, paddrSegDades, (unsigned int *)primerDirDades);
+						} 
+						else 
+						{
+							_gm_liberarMem(zocalo);								//si no s'ha pogut reservar la memòria requerida, alliberem a partir del zocalo
+							cap = 0;											//programa no carregat ja que no hi ha espai
+						}
+					}	
+				}														
 				offset = offset + capcaleraElf.e_phentsize;							//actualitzem offset per a que apunti al següent segment del .elf a partir del tamany de cada entrada
 			}
 			if (cap == 1)															//mirem si el programa ha cabut correctament
