@@ -558,8 +558,6 @@ _gp_matarProc:
 	mov r2, #24
 	mla r3, r2, r0, r1		@; calculamos el desplazamiento
 	mov r4, #0	
-	@; inhibimos las IRQs porque si ya tenemos puesto el PID a 0 es importante asegurarse de que se ha eliminado el proceso de la cola correspondiente en el que se encuentre para que no haya incoherencias
-	@;bl _gp_inhibirIRQs
 	str r4, [r3]		@; ponemos el PID a 0
 	
 	ldr r5, =_gd_qReady
@@ -604,7 +602,7 @@ _gp_matarProc:
 			str r7, [r5, r4]
 			
 	.LfiMP:
-		@;bl _gp_desinhibirIRQs
+	
 	pop {r1-r10, pc}
 	
 	
