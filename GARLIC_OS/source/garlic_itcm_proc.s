@@ -334,68 +334,65 @@ _gp_actualizarDelay:
 	ldr r1, =_gd_nDelay
 	ldr r2, [r1]
 	mov r3, #0
-	cmp r2, r3				@; si no hay procesos en la cola de delay terminamos la funcion
-	beq .LfiActDel
-	mov r4, #0				@; usaremos r4 como contador de procesos ya decrementados y r3 como desplazamiento
-	.LdecrTic:
-		cmp r4, r2
-		beq .LfiActDel		@; cuando hayamos visto todos los procesos terminamos
-		ldr r5, [r0, r3]	@; cargamos el valor de la cola de delay
-		ldr r6, =0xFFFFFF	@; mascara para coger los 24 bits bajos
-		and r7, r5, r6
-		cmp r7, r6			@; si los 24 bits estan a 1 significa que es bloqueo por semaforo
-		addeq r3, #4		@; añadimos 4 porque son int's
-		addeq r4, #1
-		beq .LdecrTic
-		sub r5, #1			@; restamos 1 tic
-		sub r7, #1			@; restamos el tic tambien al registro auxiliar
-		ldr r6, =0xFFFF		@; mascara para mirar los 16 bits bajos
-		tst r7, r6
-		beq .LcamReady
-		str r5, [r0, r3]	@; guardamos el valor decrementado
-		add r3, #4
-		add r4, #1
-		b .LdecrTic
-		
-	.LcamReady:
-		mov r5, r5, lsr #24	@; ponemos el zocalo en los 8 bits bajos
-		ldr r7, =_gd_qReady
-		ldr r8, =_gd_nReady
-		ldr r9, [r8]
-		bl _gp_inhibirIRQs
-		strb r5, [r7, r9]	@; guardamos el zocalo en la cola de Ready
-		add r9, #1			@; incrementamos en 1 el numero de procesos en la cola de Ready
-		str r9, [r8]
-		mov r8, #0
-		sub r2, #1			@; restamos en 1 el numero de procesos en la cola de Delay
-		str r2, [r1]
-		ldr r7, =_gd_pcbs
-		ldr r8, [r7, r5]	@; cargamos el pid del zocalo correspondiente
-		ldr r9, =0x7FFFFFFF
-		and r8, r8, r9      @; ponemos el bit mas alto en 0 para que salvar contexto 
-		str r8, [r7, r5]
-		mov r7, r3			@; auxiliar del desplazamiento
-		mov r9, r4			@; auxiliar del numero de procesos
-		
-		.LmovDel:			@; bucle para avanzar una posicion el resto de valores de la cola de Delay
-			cmp r9, r2
-			beq .LfiMovDel
-			add r7, #4
-			ldr r8, [r0, r7]
-			sub r7, #4
-			str r8, [r0, r7]
-			add r7, #4
-			add r9, #1
-			b .LmovDel
-		
-		.LfiMovDel:
-			mov r8, #0
-			str r8, [r0, r7]
-			bl _gp_desinhibirIRQs
-			b .LdecrTic
-	
-	.LfiActDel:
-	pop {r0-r9, pc}
+	cmp r2, r3@; si no hay procesos en la cola de delay terminamos la funcion
+	ble .LfiActDel
+	mov r4, #0@; usaremos r4 como contador de procesos ya decrementados y r3 como desplazamiento
+.LdecrTic:
+	cmp r4, r2
+	beq .LfiActDel@; cuando hayamos visto todos los procesos terminamos
+	ldr r5, [r0, r3]@; cargamos el valor de la cola de delay
+	ldr r6, =0xFFFFFF@; mascara para coger los 24 bits bajos
+	and r7, r5, r6
+	cmp r7, r6@; si los 24 bits estan a 1 significa que es bloqueo por semaforo
+	addeq r3, #4@; aÃ±adimos 4 porque son int's
+	addeq r4, #1
+	beq .LdecrTic
+	sub r5, #1@; restamos 1 tic
+	sub r7, #1@; restamos el tic tambien al registro auxiliar
+	ldr r6, =0xFFFF@; mascara para mirar los 16 bits bajos
+	tst r7, r6
+	beq .LcamReady
+	str r5, [r0, r3]@; guardamos el valor decrementado
+	add r3, #4
+	add r4, #1
+	b .LdecrTic
+
+.LcamReady:
+	mov r5, r5, lsr #24@; ponemos el zocalo en los 8 bits bajos
+	ldr r7, =_gd_qReady
+	ldr r8, =_gd_nReady
+	ldr r9, [r8]
+	bl _gp_inhibirIRQs
+	strb r5, [r7, r9]@; guardamos el zocalo en la cola de Ready
+	add r9, #1@; incrementamos en 1 el numero de procesos en la cola de Ready
+	str r9, [r8]
+	mov r8, #0
+	sub r2, #1@; restamos en 1 el numero de procesos en la cola de Delay
+	str r2, [r1]
+
+	mov r7, r3@; auxiliar del desplazamiento
+	mov r9, r4@; auxiliar del numero de procesos
+	bl _gp_desinhibirIRQs
+
+.LmovDel:@; bucle para avanzar una posicion el resto de valores de la cola de Delay
+	cmp r9, r2
+	beq .LfiMovDel
+	add r7, #4
+	ldr r8, [r0, r7]
+	sub r7, #4
+	str r8, [r0, r7]
+	add r7, #4
+	add r9, #1
+	b .LmovDel
+
+.LfiMovDel:
+	mov r8, #0
+	str r8, [r0, r7]
+	b .LdecrTic
+
+.LfiActDel:
+ 
+pop {r0-r9, pc}
 
 
 	.global _gp_numProc
@@ -554,56 +551,72 @@ _gp_terminarProc:
 	@;	R0:	zócalo del proceso a matar (entre 1 y 15).
 _gp_matarProc:
 	push {r1-r10, lr}
-	ldr r1, =_gd_pcbs		@; cargamos la dirección del vector de pcbs
-	mov r2, #24
-	mla r3, r2, r0, r1		@; calculamos el desplazamiento
-	mov r4, #0	
-	str r4, [r3]		@; ponemos el PID a 0
-	
-	ldr r5, =_gd_qReady
-	ldr r6, =_gd_nReady
-	ldr r7, [r6]
-	.LforR:
-		ldrb r8, [r5, r4]
-		cmp r8, r0			@; miramos si coincide el zocalo
-		beq .Ltreure
-		add r4, #1
-		cmp r4, r7
-		blo .LforR			@; seguimos recorriendo la cola
-		mov r4, #0
-		ldr r5, =_gd_qDelay
-		ldr r6, =_gd_nDelay
-		ldr r7, [r6]
-		mov r10, #0
-		
-	.LforD:
-		ldr r8, [r6, r4]
-		@; agafar els 8 bits alts per comprovar si es el num de zocalo
-		cmp r9, r0
-		beq .Ltreure
-		add r4, #4
-		add r10, #1
-		cmp r4, r10
-		blo .LforD
-		b .LfiMP
-	
-	.Ltreure:
-		.Lmoure:
-			add r4, #1
-			ldr r1, [r5, r4]
-			sub r4, #1
-			str r1, [r5, r4]
-			add r4, #1
-			cmp r7, r4
-			blo .Lmoure
-			sub r7, #1 				@; restamos 1 al numero de procesos en cola de Ready
-			str r7, [r6]
-			mov r7, #0
-			str r7, [r5, r4]
-			
-	.LfiMP:
-	
-	pop {r1-r10, pc}
+    ldr r1, =_gd_pcbs        @; cargamos la dirección del vector de pcbs
+    mov r2, #24
+    mla r3, r2, r0, r1        @; calculamos el desplazamiento
+    mov r4, #0
+
+    str r4, [r3]        @; ponemos el PID a 0
+
+    ldr r5, =_gd_qReady
+    ldr r6, =_gd_nReady
+    ldr r7, [r6]
+    .LforR:
+        ldrb r8, [r5, r4]
+        cmp r8, r0            @; miramos si coincide el zocalo
+        beq .LtreureReady
+        add r4, #1
+        cmp r4, r7
+        blo .LforR            @; seguimos recorriendo la cola
+        mov r4, #0
+        ldr r5, =_gd_qDelay
+        ldr r6, =_gd_nDelay
+        ldr r7, [r6]
+        mov r11, r7
+        mov r10, #0
+
+    .LforD:
+        ldr r8, [r5, r4]
+        mov r8, r8, lsr #24
+        cmp r8, r0
+        beq .LtreureDelay
+        add r4, #4
+        add r10, #1
+        cmp r10, r7
+        blo .LforD
+        b .LfiMP
+
+    .LtreureReady:
+        .LmoureR:
+            add r4, #1
+            ldr r1, [r5, r4]
+            sub r4, #1
+            str r1, [r5, r4]
+            add r4, #1
+            cmp r7, r4
+            blo .LmoureR
+            sub r7, #1                 @; restamos 1 al numero de procesos en cola de Ready
+            str r7, [r6]
+            b .LfiMP
+
+    .LtreureDelay:
+        .LmoureD:
+            add r4, #4
+            ldr r1, [r5, r4]
+            sub r4, #4
+            str r1, [r5, r4]
+            add r4, #4
+            add r10, #1
+            cmp r10, r7
+            blo .LmoureD
+            sub r11, #1                 @; restamos 1 al numero de procesos en cola de Delay
+            str r11, [r6]
+            mov r7, #0
+            str r7, [r5, r4]
+
+    .LfiMP:
+
+    pop {r1-r10, pc}
 	
 	
 .global _gp_retardarProc
