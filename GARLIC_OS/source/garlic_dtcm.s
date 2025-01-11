@@ -66,4 +66,7 @@ _gd_quo: .word 0
 	.global _gd_mod					@; Variable para guardar el modulo de la division
 _gd_mod: .word 0
 
+	.global _gd_bloqSem
+_gd_bloqSem: .space 8				@; Variable para guardar el zocalo bloqueado por el semaforo
+
 .end

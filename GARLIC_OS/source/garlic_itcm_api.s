@@ -170,7 +170,8 @@ _ga_wait:
 	mov r7, #0xf
 	and r9, r9, r7			@; numero de zocalo
 	mov r7, #0
-	
+	ldr r12, =_gd_bloqSem
+	strb r9, [r12, r0]			@; guardamos el proceso bloqueado por el semaforo
 	.LmovReady:
 		mov r10, #0
 		mov r11, #0xffffff
@@ -212,12 +213,15 @@ _ga_signal:
 	ldr r5, =_gd_nDelay
 	ldr r6, [r5]
 	mov r7, #0
-	mov r9, #0xf
+	ldr r9, =_gd_bloqSem
+	ldrb r10, [r9, r0]		@; zocalo bloqueado por el semaforo
 	.LbuscD:
 		cmp r6, r7
 		beq .LfiBuscD
 		ldr r8, [r4, r7]
 		mov r8, r8, lsr #24	@; ponemos el zocalo en los 8 bits bajos
+		cmp r8, r10
+		bne .LbuscD
 
 		ldr r12, =_gd_pidz
 		

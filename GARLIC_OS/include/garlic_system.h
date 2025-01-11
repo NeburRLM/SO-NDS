@@ -91,6 +91,8 @@ extern int _gd_quo;				// contendrÃ¡ el cuociente de la division
 
 extern int _gd_mod;				// contendrÃ¡ el modulo de la division
 
+extern char _gd_bloqSem[8];		//vector de zocalos bloqueados por los semaforos
+
 //------------------------------------------------------------------------------
 //	Rutinas de gestión de procesos (garlic_itcm_proc.s)
 //------------------------------------------------------------------------------
