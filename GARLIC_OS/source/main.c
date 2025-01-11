@@ -354,6 +354,34 @@ unsigned char test2()
 
 
 
+/* test 3:	test de carga de programa de usuario LABE sin espacio de memoria,
+			por tal de comprobar que no se supere el límite de almacenamiento
+			de programas en memoria
+*/
+unsigned char test3()
+{
+	char *expected = "LABE";
+	intFunc start;
+	unsigned char i = 0;
+	unsigned char result = 1;
+
+	_gg_escribir("\n**TEST 3: carga sin espacio LABE**\n", 0, 0, 0);
+	start = _gm_cargarPrograma(i+1, expected);
+	if (start)	// verficación de carga
+	{
+		_gp_crearProc(start, i+1, expected, i);
+	}
+	else
+	{
+		_gg_escribir("\nERROR: no hay suficiente memoria\n", 0, 0, 0);
+		result = 0;
+	}
+	return result;
+}
+
+
+
+
 /* Inicializaciones generales del sistema Garlic */
 void inicializarSistema()
 {
@@ -412,10 +440,15 @@ int main(int argc, char **argv) {
 	
 	esperaSegundos(10);	// espera para ver más claro el funcionamiento entre prueba y prueba
 	
-	if (test0())
+	if (test0())			// TEST 0: lista de programas
 	{
-		if (test1())
-			test2();
+		if (test1())		// TEST 1: carga consecutiva\n\tDESC | LABE | PRNT
+			if (test2())	// TEST 2: carga no consecutiva\n\tPONG | DESC
+			{
+				esperaSegundos(5);
+				test3();	// TEST 3: carga sin espacio LABE
+			}
+				
 			
 	}
 	_gg_escribir("\n*** Final fase 2 / ProgM\n", 0, 0, 0);
