@@ -214,8 +214,9 @@ int main(int argc, char **argv) {
 	int key;
 
 	inicializarSistema();
-	loadFiles();
-	for(int i = 0; i < 8; i++){
+	loadFiles();					// carga ficheros de datos de gba rom a memoria
+	
+	for(int i = 0; i < 8; i++){		// inicialización de los semáforos para que esten en signal
 		_gd_sem[i] = 1;
 	}
 	_gg_escribir("%1********************************", 0, 0, 0);

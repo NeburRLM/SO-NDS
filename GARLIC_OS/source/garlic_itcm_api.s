@@ -151,7 +151,7 @@ _ga_setchar:
 
 	.global _ga_wait
 _ga_wait:
-	push {r1-r11, lr}
+	push {r1-r12, lr}
 	ldr r1, =_gd_sem
 	ldrb r2, [r1, r0]		@; cogemos el valor del semaforo
 	cmp r2, #1				@; si ya esta bloqueado indicamos que no se puede bloquear porque el semaforo ya esta siendo usado por otro proceso
@@ -196,7 +196,7 @@ _ga_wait:
 		mov r0, #0			@; retornamos codigo de que no puede ser bloqueado por ese semaforo
 	
 	.Lwait_fi:
-	pop {r1-r11, pc}
+	pop {r1-r12, pc}
 
 	.global _ga_signal
 _ga_signal:

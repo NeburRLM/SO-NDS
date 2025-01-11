@@ -76,7 +76,6 @@ _gp_rsiVBL:
 		str r5, [r4]
 		
 		@;incremento de workTicks
-		@;bl _gp_inhibirIRQs
 		ldr r4, =_gd_pidz
 		ldr r4, [r4]
 		mov r5, #0xF
@@ -91,7 +90,6 @@ _gp_rsiVBL:
 		add r6, #1				@;incrementamos los workTicks
 		orr r5, r4, r6
 		str	r5, [r7, #20]
-		@;bl _gp_desinhibirIRQs
 		
 		bl _gp_actualizarDelay
 		
@@ -555,74 +553,60 @@ _gp_terminarProc:
 	@; Parámetros:
 	@;	R0:	zócalo del proceso a matar (entre 1 y 15).
 _gp_matarProc:
-	push {r1-r10, lr}                  @; Guardar registros de uso general y enlace
-
-    ldr r1, =_gd_pcbs                 @; Cargar dirección base del vector _gd_pcbs
-    mov r2, #24                       @; Tamaño de cada PCB (24 bytes)
-    mla r3, r2, r0, r1                @; Calcular dirección del PCB del zócalo R0
-    mov r4, #0                        @; Inicializar R4 como 0
-
-    @; Inhibir IRQs
-    bl _gp_inhibirIRQs
-
-    str r4, [r3]                      @; Poner el PID del PCB a 0 (marcar como libre)
-
-    @; Eliminar de la cola READY
-    ldr r5, =_gd_qReady               @; Dirección de la cola READY
-    ldr r6, =_gd_nReady               @; Dirección del contador de procesos READY
-    ldr r7, [r6]                      @; Cargar número de procesos en READY
-
-.LforR:
-    ldrb r8, [r5, r4]                 @; Leer entrada de READY en posición R4
-    cmp r8, r0                        @; Comparar con el zócalo a eliminar
-    beq .LtreureReady                 @; Saltar si se encuentra
-    add r4, r4, #1                    @; Incrementar índice
-    cmp r4, r7                        @; Comparar con el tamaño de la cola
-    blo .LforR                        @; Continuar buscando en READY
-
-    @; Si no está en READY, buscar en DELAY
-    mov r4, #0                        @; Reiniciar índice
-    ldr r5, =_gd_qDelay               @; Dirección de la cola DELAY
-    ldr r6, =_gd_nDelay               @; Dirección del contador de procesos DELAY
-    ldr r7, [r6]                      @; Cargar número de procesos en DELAY
-
-.LforD:
-    ldr r8, [r5, r4]                  @; Leer entrada de DELAY en posición R4
-    mov r9, r8, lsr #24               @; Extraer los bits altos (zócalo)
-    cmp r9, r0                        @; Comparar con el zócalo a eliminar
-    beq .LtreureDelay                 @; Saltar si se encuentra
-    add r4, r4, #4                    @; Incrementar índice (32 bits por entrada)
-    cmp r4, r7, lsl #2                @; Comparar con el tamaño de la cola
-    blo .LforD                        @; Continuar buscando en DELAY
-
-    b .LfiMP                          @; Finalizar si no se encuentra
-
-.LtreureReady:
-    ldr r5, =_gd_qReady               @; Dirección de la cola READY
-    ldr r6, =_gd_nReady               @; Dirección del contador de READY
-    b .Ltreure                        @; Pasar al proceso de eliminación
-
-.LtreureDelay:
-    ldr r5, =_gd_qDelay               @; Dirección de la cola DELAY
-    ldr r6, =_gd_nDelay               @; Dirección del contador de DELAY
-
-.Ltreure:
-    add r4, r4, #1                    @; Mover índice a la siguiente posición
-.Lmoure:
-    ldr r1, [r5, r4]                  @; Leer la siguiente entrada
-    sub r4, r4, #1                    @; Retroceder índice
-    str r1, [r5, r4]                  @; Sobrescribir la posición actual
-    add r4, r4, #1                    @; Avanzar índice
-    cmp r4, r7                        @; Comparar con el número de procesos
-    blo .Lmoure                       @; Continuar moviendo entradas
-    sub r7, r7, #1                    @; Decrementar contador de procesos
-    str r7, [r6]                      @; Guardar nuevo número de procesos
-
-.LfiMP:
-    @; Desinhibir IRQs
-    bl _gp_desinhibirIRQs
-
-    pop {r1-r10, pc}                  @; Restaurar registros y volver
+	push {r1-r10, lr}
+	ldr r1, =_gd_pcbs		@; cargamos la dirección del vector de pcbs
+	mov r2, #24
+	mla r3, r2, r0, r1		@; calculamos el desplazamiento
+	mov r4, #0	
+	@; inhibimos las IRQs porque si ya tenemos puesto el PID a 0 es importante asegurarse de que se ha eliminado el proceso de la cola correspondiente en el que se encuentre para que no haya incoherencias
+	@;bl _gp_inhibirIRQs
+	str r4, [r3]		@; ponemos el PID a 0
+	
+	ldr r5, =_gd_qReady
+	ldr r6, =_gd_nReady
+	ldr r7, [r6]
+	.LforR:
+		ldrb r8, [r5, r4]
+		cmp r8, r0			@; miramos si coincide el zocalo
+		beq .Ltreure
+		add r4, #1
+		cmp r4, r7
+		blo .LforR			@; seguimos recorriendo la cola
+		mov r4, #0
+		ldr r5, =_gd_qDelay
+		ldr r6, =_gd_nDelay
+		ldr r7, [r6]
+		mov r10, #0
+		
+	.LforD:
+		ldr r8, [r6, r4]
+		@; agafar els 8 bits alts per comprovar si es el num de zocalo
+		cmp r9, r0
+		beq .Ltreure
+		add r4, #4
+		add r10, #1
+		cmp r4, r10
+		blo .LforD
+		b .LfiMP
+	
+	.Ltreure:
+		.Lmoure:
+			add r4, #1
+			ldr r1, [r5, r4]
+			sub r4, #1
+			str r1, [r5, r4]
+			add r4, #1
+			cmp r7, r4
+			blo .Lmoure
+			sub r7, #1 				@; restamos 1 al numero de procesos en cola de Ready
+			str r7, [r6]
+			mov r7, #0
+			str r7, [r5, r4]
+			
+	.LfiMP:
+		@;bl _gp_desinhibirIRQs
+	pop {r1-r10, pc}
+	
 	
 .global _gp_retardarProc
 	@; retarda la ejecución de un proceso durante cierto número de segundos,
@@ -737,7 +721,6 @@ _gp_rsiTIMER0:
 			mov r2, r2, lsr #8
 			ldr r3, [r3]
 			mov r8, #0
-			@;and r4, r4, r8			@; ponemos a 0 los workticks
 			mov r8, r2, lsl #24		@; ponemos el porcentage en los 8 bits altos
 			mla r3, r10, r11, r9
 			str r8, [r3, #20]		@; guardamos en workticks
