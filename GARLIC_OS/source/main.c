@@ -29,7 +29,8 @@ extern volatile uint8_t _gd_nDelay;     		// número de zócalos en delay
 */
 void afegir_delay(uint8_t zocalo) {
     // Verifiquem que el número de sòcol està dins del rang vàlid (0-15)
-    if (zocalo > 15) {
+    if (zocalo > 15) 
+	{
         return; // Número de sòcol invàlid
     }
 
@@ -37,16 +38,16 @@ void afegir_delay(uint8_t zocalo) {
     uint32_t packed_value = (zocalo << 24); // Desplacem el número de sòcol als 8 bits més alts
 
     // Recorrem la cua per trobar una posició lliure
-    for (int i = 0; i < 16; i++) {
-        if (_gd_qDelay[i] == 0) { // Si la posició està buida
-            _gd_qDelay[i] = packed_value; // Emmagatzemem el valor empaquetat
-            
-			 _gd_nDelay++; // Incrementem el nombre de sòcols a la cua de retard
+    for (int i = 0; i < 16; i++) 
+	{
+        if (_gd_qDelay[i] == 0) // Si la posició està buida
+		{ 
+            _gd_qDelay[i] = packed_value; // Emmagatzemem el valor empaquetat      
+			_gd_nDelay++; // Incrementem el nombre de sòcols a la cua de retard
 			
 			return; // Finalitzem
         }
     }
-
     // Cua plena
 }
 
@@ -59,9 +60,11 @@ void afegir_delay(uint8_t zocalo) {
    en semafor, i així, comprovar el funcionament de la RSI del timer 1 (no s'utilitzarà mai 
    de manera operativa, només artificialment).*
 */
-void afegir_delay_semafor(uint8_t zocalo) {
+void afegir_delay_semafor(uint8_t zocalo) 
+{
     // Verifiquem que el número de sòcol està dins del rang vàlid (0-15)
-    if (zocalo > 15) {
+    if (zocalo > 15) 
+	{
         return; // Número de sòcol invàlid
     }
 
@@ -69,16 +72,15 @@ void afegir_delay_semafor(uint8_t zocalo) {
     uint32_t packed_value = (zocalo << 24) | 0xFFFFFF; // Desplacem el número de sòcol i establim els bits baixos a 1
 
     // Recorrem la cua per trobar una posició lliure
-    for (int i = 0; i < 16; i++) {
-        if (_gd_qDelay[i] == 0) { // Si la posició està buida
+    for (int i = 0; i < 16; i++) 
+	{
+        if (_gd_qDelay[i] == 0) 
+		{ // Si la posició està buida
             _gd_qDelay[i] = packed_value; // Emmagatzemem el valor empaquetat
-
             _gd_nDelay++; // Incrementem el nombre de sòcols a la cua de retard
-
             return; // Finalitzem
         }
     }
-
     // Cua plena
 }
 
@@ -429,7 +431,8 @@ int main(int argc, char **argv) {
 	testPartAdd();
 	
 	// Inicialitzem la cua de delay a 0
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 16; i++) 
+	{
         _gd_qDelay[i] = 0;
     }
 	
@@ -438,18 +441,19 @@ int main(int argc, char **argv) {
 	afegir_delay(14);
 	afegir_delay_semafor(12);
 	
-	esperaSegundos(10);	// espera para ver más claro el funcionamiento entre prueba y prueba
+	esperaSegundos(8);	// espera para ver más claro el funcionamiento entre prueba y prueba
 	
 	if (test0())			// TEST 0: lista de programas
 	{
-		if (test1())		// TEST 1: carga consecutiva\n\tDESC | LABE | PRNT
-			if (test2())	// TEST 2: carga no consecutiva\n\tPONG | DESC
+		if (test1())		// TEST 1: carga consecutiva\n\tDESC | LABE | PRNT (cuando acaba DESC, elimina PRNT)
+		{	
+			esperaSegundos(5);
+			if (test2())	// TEST 2: carga no consecutiva\n\tPONG | DESC (cuando pasen 6seg, elimino PONG i cargo LABE)
 			{
 				esperaSegundos(5);
 				test3();	// TEST 3: carga sin espacio LABE
 			}
-				
-			
+		}				
 	}
 	_gg_escribir("\n*** Final fase 2 / ProgM\n", 0, 0, 0);
 	while (1) _gp_WaitForVBlank();

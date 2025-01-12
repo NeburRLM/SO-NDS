@@ -15,7 +15,7 @@
 #include "garlic_system.h"	// definición de funciones y variables de sistema
 #include <elf.h> 
 
-#define MAX_FILES 10
+#define MAX_FILES 10	// de file0 a file9 (max)
 #define FILE_SIZE 65536  // 64 KB
 
 extern int _gd_pidz;
@@ -26,8 +26,8 @@ typedef struct {
     size_t size;        // Mida de les dades vàlides
     size_t pos;         // Punter (posició) de lectura/escriptura
 	char is_open;     	// Indicador de si el fitxer està obert
-	int proces;
-	char* mode;
+	int proces;			// ID proces únic (Identificador de proceso + zócalo actual)
+	char* mode;			// mode apertura procés ("w"->sobreescriure / "a"->afegir)
 } File;
 
 // Array para almacenar hasta 10 ficheros
@@ -104,32 +104,31 @@ Elf32_Word ferMultiple(Elf32_Word tSeg)
 }
 
 
-
-// Función para abrir un archivo cargado en memoria
+// Funció per obrir un fitxer carregat a memòria
 FILE* _gm_fopen(const char* filename, const char* mode)
 {
-    int index = filename[4] - '0';  // Obtener el número del archivo ("fileX")
+    int index = filename[4] - '0';  // Obtenir el número del fitxer ("fileX")
     if (index < 0 || index >= MAX_FILES) 
 	{
-        return NULL;  // Fuera del rango de archivos permitidos
+        return NULL;  // Fora de rang dels fitxers permesos
     }
 
-    // Verificar si el archivo ya está cargado (ya está en memoria)
+    // Verificar si el fitxer ja està carregat (ya està en memòria) -> si té assignats els 64kB
     if (files[index].data == NULL) 
 	{
-        return NULL;  // Si no se pudo cargar el archivo
+        return NULL;  // Si no es va poder carregar el fitxer anteriorment
     }
 	
-	// Verificar si el archivo ya está abierto
+	// Verificar si el fitxer ja està obert
     if (files[index].is_open) 
 	{
-        return NULL;  // El archivo ya está siendo usado
+        return NULL;  // El fitxer ja està sent usat
     }
 	
-	
+	// Verificar que el mode sigui correcte
 	if (strcmp(mode, "w") != 0 && strcmp(mode, "a") != 0) 
     {
-        return NULL;  // Modo inválido
+        return NULL;  // Mode invàlid
     }
     if (strcmp(mode, "w") == 0) 
     {
@@ -140,22 +139,28 @@ FILE* _gm_fopen(const char* filename, const char* mode)
 		files[index].mode = "a";
 	}
 	
-	// Marcar el archivo como abierto y devolver el puntero
-    files[index].is_open = 1;
-	files[index].proces = _gd_pidz;
-    files[index].pos = 0;  // Reiniciar la posición
+	// Una vegada fetes les proves anteriors, marcar el fitxer com a obert i retornar el punter
+    files[index].is_open = 1;	// marcar-lo com obert
+	files[index].proces = _gd_pidz;	// assignem identificador al procés per a que només el faci ús el procés que l'ha obert
+    files[index].pos = 0;  // Reiniciar la posició
 	
-    // Devolver el archivo cargado en memoria
+    // Retornar el punter del fitxer carregat en memòria
     return (FILE*)&files[index]; 
 }
 
-// Funció per llegir dades del fitxer carregat a la memòria
+
+/* Funció per llegir dades del fitxer carregat a la memòria
+ 	- *buffer -> punter per emmagatzemar les dades llegides
+	- size -> mida de cada element en bytes
+	- numele -> quantitat d'elements que es volen llegir
+	- *file -> punter al fitxer obert
+*/
 size_t _gm_fread(void *buffer, size_t size, size_t numele, FILE *file)
 {
     File *f = (File*)file;
-    size_t bytesToRead = size * numele;
+    size_t bytesToRead = size * numele;	// calculem els bytes que es volen llegir
 	
-	// Verificar que el archivo está abierto y que el proceso actual es el propietario
+	// Verificar que el fitxer està obert i que el procés actual és el propietari
     if (f->is_open && f->proces == _gd_pidz) 
     {
 		// Si la posició està al final del fitxer, restablim a 0 (llegir des del principi)
@@ -164,12 +169,13 @@ size_t _gm_fread(void *buffer, size_t size, size_t numele, FILE *file)
 			f->pos = 0;  // Restableix la posició si ja no hi ha més dades
 		//}
 
-		// Assegura't de no llegir més enllà de la mida del fitxer
+		// Ens assegurem de no llegir més enllà de la mida del fitxer
 		if (f->pos + bytesToRead > f->size) 
 		{
 			bytesToRead = f->size - f->pos;  // Llegir només fins al final del fitxer
 		}
-
+		
+		// Si es vol llegir al menys un byte
 		if (bytesToRead > 0) {
 			memcpy(buffer, f->data + f->pos, bytesToRead);  // Copia les dades al buffer
 			f->pos += bytesToRead;  // Actualitza la posició després de la lectura
@@ -177,45 +183,49 @@ size_t _gm_fread(void *buffer, size_t size, size_t numele, FILE *file)
 	}
 	else
 	{
-		bytesToRead = 0;
+		bytesToRead = 0;	// si el fitxer no el podem llegir, retornem número de bytes llegits = 0
 	}
 
     return bytesToRead;  // Retorna els bytes llegits (pot ser 0 si no hi ha més dades)
 }
 
-// Funció per escriure dades al fitxer carregat a la memòria
+/* Funció per escriure dades al fitxer carregat a la memòria
+ 	- *buffer -> punter on s'emmagatzemen les dades a escriure de l'usuari
+	- size -> mida de cada element en bytes que volem escriure
+	- num -> quantitat d'elements que es volen escriure
+	- *file -> punter al fitxer obert
+*/
 size_t _gm_fwrite(const void *buffer, size_t size, size_t num, FILE *file) 
 {
     File *f = (File*)file;
-    size_t bytesToWrite = size * num;
+    size_t bytesToWrite = size * num;	// calculem els bytes que es volen escriure
 
-    // Verificar que el archivo está abierto y que el proceso actual es el propietario
+    // Verificar que el fitxer està obert i que el procés actual és el propietari
     if (f->is_open && f->proces == _gd_pidz) 
     {
 		
-		// Manejamos el modo "a" (append) para empezar desde el final del contenido
+		// Gestionem el mode "a" (append) per començar des del final del contingut
 		if (strcmp(f->mode, "a") == 0) 
 		{
-			f->pos = f->size; // Colocar la posición al final del archivo
+			f->pos = f->size; // Col·locar la posició al final de l'últim caràcter del fitxer 
 		}
-		// Manejamos el modo "w" (write) para sobrescribir desde el inicio
+		// Fem servir el mode "w" (write) per sobreescriure des de l'inici
 		else if (strcmp(f->mode, "w") == 0) 
 		{
 			f->pos = 0;     // Restablecer la posición al inicio
 			f->size = 0;    // Vaciar el contenido actual
-			memset(f->data, 0, FILE_SIZE);
+			memset(f->data, 0, FILE_SIZE);	// Buidem contingut de les dades del fitxer per soobrescriure
 		}
-		
-		
+			
 		// No excedir la mida màxima del fitxer
 		if (f->pos + bytesToWrite > FILE_SIZE) 
 		{
 			//bytesToWrite = FILE_SIZE - f->pos;
-			bytesToWrite = 0;
+			bytesToWrite = 0;	// no deixem escriure
 		}
 		else
 		{	
-			// Escriure les dades al fitxer
+			// Escriure les dades al fitxer (f-> data)
 			memcpy(f->data + f->pos, buffer, bytesToWrite);
 			f->pos += bytesToWrite;
 			
@@ -228,7 +238,7 @@ size_t _gm_fwrite(const void *buffer, size_t size, size_t num, FILE *file)
 	}
 	else
 	{
-		bytesToWrite = 0;
+		bytesToWrite = 0;	// Si no s'ha pogut escriure, retornem error = 0 (bytes que s'han escrit)
 	}
     return bytesToWrite;  // Retorna els bytes escrits
 }
@@ -239,18 +249,19 @@ int _gm_fclose(FILE *file)
     File *f = (File*)file;
     if (f == NULL) 
 	{
-        return -1;  // Error: puntero inválido
+        return -1;  // Error: punter invàlid (fitxer no vàlid o inexistent)
     }
 
-    f->is_open = 0;	// Marcar el archivo como cerrado
-	f->proces = -1;
+    f->is_open = 0;	// Marcar el fitxer com tancat
+	f->proces = -1;	//Id procés diferent (marcar-lo com tancat)
     return 0;  // Operació exitosa  
 }
 
 // Funció per carregar els fitxers a la memòria
 void loadFiles() 
 {
-    for (int i = 0; i < MAX_FILES; i++) 
+    // Per cadascun dels fitxers que hi hagi en el directori /Datos
+	for (int i = 0; i < MAX_FILES; i++) 
 	{
         // Inicialitzar el nom del fitxer "fileX"
         snprintf(files[i].name, sizeof(files[i].name), "file%d", i);
@@ -263,7 +274,6 @@ void loadFiles()
         FILE* f = fopen(path, "rb"); // Utilitzem fopen estàndard per accedir al fitxer
         if (f != NULL) 
 		{
-            
 			// Assignar memòria dinàmica de 64 KB per als fitxers
 			files[i].data = (char*)malloc(FILE_SIZE);
 			files[i].size = 0;
